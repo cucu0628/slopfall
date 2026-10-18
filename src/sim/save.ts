@@ -1,14 +1,13 @@
 // Run snapshots for "continue where you left off". A snapshot keeps what
-// defines the run (map seed, heroes and their build, wave, time, kills) and
-// drops transient things (enemies, projectiles, effects); a restored run
-// simply spawns fresh enemies for the saved wave.
+// defines the run (map seed, heroes and their build, wave, time, kills, the
+// bosses still alive) and drops transient things (other enemies, projectiles,
+// effects); a restored run simply spawns fresh enemies for the saved wave.
 
 import { CHARACTERS } from './content/characters';
-import { startWave } from './systems/waves';
 import type { GameState } from './types';
 
 /** Bump when GameState changes shape so old saves are ignored instead of breaking. */
-export const SAVE_VERSION = 2;
+export const SAVE_VERSION = 3;
 
 export interface RunSave {
   v: number;
@@ -19,7 +18,8 @@ export interface RunSave {
 export function snapshot(s: GameState, savedAt: number): RunSave {
   const state: GameState = {
     ...s,
-    enemies: [],
+    // bosses keep their HP: respawning the whole boss wave let players farm boss chests by reloading
+    enemies: s.enemies.filter((e) => e.boss && !e.dead),
     projectiles: [],
     eprojectiles: [],
     zones: [],
@@ -50,10 +50,6 @@ export function restore(save: unknown): GameState | null {
     p.invuln = 2; // a moment to get your bearings
   }
   s.events = [];
-  if (s.wave.bossWave) {
-    // the boss was not saved: start the boss wave again
-    startWave(s, s.wave.n);
-  }
   s.wave.spawnAcc = 6;
   return s;
 }

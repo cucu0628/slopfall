@@ -8,6 +8,8 @@ import type { Enemy, GameState, Player } from '../types';
 import { updateBoss } from './bosses';
 
 export const EGG_HATCH = 5;
+/** A boss takes at most one shaman heal (1% max HP) per this many seconds. */
+export const BOSS_HEAL_EVERY = 3.5;
 
 export function updateEnemies(s: GameState, dt: number): void {
   const decay = Math.max(0, 1 - 9 * dt);
@@ -111,7 +113,13 @@ function updateRegular(s: GameState, e: Enemy, d: number, nx: number, ny: number
       if (e.t <= 0) {
         e.t = 3.5;
         forEnemiesInCircle(e.x, e.y, 220, (o) => {
-          o.hp = Math.min(o.maxHp, o.hp + o.maxHp * (o.boss ? 0.02 : 0.15));
+          if (!o.boss) {
+            o.hp = Math.min(o.maxHp, o.hp + o.maxHp * 0.15);
+          } else if (s.time >= o.healReadyAt) {
+            // shamans gather around the boss, so their heals must not stack or weaker builds can't out-damage them
+            o.healReadyAt = s.time + BOSS_HEAL_EVERY;
+            o.hp = Math.min(o.maxHp, o.hp + o.maxHp * 0.01);
+          }
         });
         s.events.push({ t: 'explode', x: e.x, y: e.y, r: 220, color: '#2ee6c5' });
       }
