@@ -1,4 +1,4 @@
-/* Main menu: copyright credit and the Continue button. */
+/* Main menu: copyright credit, the Continue and Report a bug buttons. */
 
 /* ---------------------------------------------------------------- credit */
 
@@ -47,4 +47,17 @@
   font-weight: 600;
   letter-spacing: 0.04em;
   opacity: 0.9;
+}
+
+/* ---------------------------------------------------------------- bug report */
+
+.btn.bug-report {
+  font-size: 13px;
+  padding: 8px 18px;
+  color: var(--muted);
+  text-decoration: none;
+}
+
+.btn.bug-report:hover {
+  color: var(--text);
 }

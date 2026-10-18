@@ -133,4 +133,11 @@
     width: auto;
     max-width: 100%;
   }
+
+  /* no height to spare for a third menu button: move it to the corner opposite the credit */
+  .btn.bug-report {
+    position: absolute;
+    left: calc(16px + env(safe-area-inset-left));
+    bottom: calc(8px + env(safe-area-inset-bottom));
+  }
 }
