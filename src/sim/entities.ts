@@ -37,7 +37,7 @@ export function spawnEnemy(s: GameState, type: string, x: number, y: number, sca
     elite, boss: !!def.boss, chest: false,
     slowT: 0, slowAmt: 0, flash: 0,
     state: 0, t: 0, t2: 0, t3: 0, tx: 0, ty: 0, sx: 0, sy: 0, ang: 0, dmgAcc: 0,
-    intangible: false, trail: [], burnT: 0, burnDps: 0, burnTick: 0, burnOwner: '', dead: false,
+    intangible: false, trail: [], burnT: 0, burnDps: 0, burnTick: 0, burnOwner: '', healReadyAt: 0, dead: false,
   };
   if (!ignoresObstacles(type)) resolveObstacles(s.mapSeed, e, e.radius);
   e.px = e.x;

@@ -142,6 +142,7 @@ export interface Enemy {
   burnDps: number; // base damage per second while burning
   burnTick: number;
   burnOwner: PlayerId;
+  healReadyAt: number; // game time when shamans may heal this boss again
   dead: boolean;
 }
 

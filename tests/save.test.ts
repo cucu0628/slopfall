@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { restore, snapshot } from '../src/sim/save';
+import { damageEnemy } from '../src/sim/combat';
 import { startWave } from '../src/sim/systems/waves';
 import { createGame } from '../src/sim/world';
 import { run } from './helpers';
@@ -24,5 +25,18 @@ describe('saving runs', () => {
     startWave(b, 10);
     const rb = restore(JSON.parse(JSON.stringify(snapshot(b, 0))))!;
     expect(rb.enemies.some((e) => e.boss)).toBe(true);
+  });
+
+  it('keeps boss HP and does not bring back a killed boss', () => {
+    const s = createGame(48, [{ id: 'p1', charId: 'knight' }], { godMode: true });
+    startWave(s, 20);
+    const [a, b] = s.enemies.filter((e) => e.boss);
+    damageEnemy(s, a, a.hp + 1, null, 'test');
+    damageEnemy(s, b, b.maxHp * 0.4, null, 'test');
+    const r = restore(JSON.parse(JSON.stringify(snapshot(s, 0))))!;
+    const bosses = r.enemies.filter((e) => e.boss);
+    expect(bosses.map((e) => e.id)).toEqual([b.id]);
+    expect(bosses[0].hp).toBeCloseTo(b.hp);
+    expect(r.wave.n).toBe(20);
   });
 });
