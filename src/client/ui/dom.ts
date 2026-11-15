@@ -11,10 +11,10 @@ export function el(tag: string, cls = '', html = ''): HTMLElement {
 
 export const esc = (s: string) => s.replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' })[c]!);
 
-export type ScreenId = 'menu' | 'chars' | 'levelup' | 'pause' | 'over';
+export type ScreenId = 'menu' | 'chars' | 'codex' | 'levelup' | 'pause' | 'over';
 
 export function show(id: ScreenId | null): void {
-  for (const s of ['menu', 'chars', 'levelup', 'pause', 'over'] as ScreenId[]) {
+  for (const s of ['menu', 'chars', 'codex', 'levelup', 'pause', 'over'] as ScreenId[]) {
     byId(`screen-${s}`).classList.toggle('hidden', s !== id);
   }
 }

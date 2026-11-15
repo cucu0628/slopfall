@@ -4,10 +4,12 @@
 // effects); a restored run simply spawns fresh enemies for the saved wave.
 
 import { CHARACTERS } from './content/characters';
+import { refreshStats } from './systems/leveling';
+import { vigorHpAt } from './systems/waves';
 import type { GameState } from './types';
 
 /** Bump when GameState changes shape so old saves are ignored instead of breaking. */
-export const SAVE_VERSION = 3;
+export const SAVE_VERSION = 4;
 
 export interface RunSave {
   v: number;
@@ -36,10 +38,15 @@ export function snapshot(s: GameState, savedAt: number): RunSave {
 /** Returns a playable state from a snapshot, or null if it is unusable. */
 export function restore(save: unknown): GameState | null {
   const sv = save as RunSave | null;
-  if (!sv || sv.v !== SAVE_VERSION || !sv.state || !Array.isArray(sv.state.players)) return null;
+  if (!sv || (sv.v !== SAVE_VERSION && sv.v !== 3) || !sv.state || !Array.isArray(sv.state.players)) return null;
   const s = JSON.parse(JSON.stringify(sv.state)) as GameState;
   if (s.gameOver || s.players.length === 0 || s.players.some((p) => !CHARACTERS[p.charId] || p.dead)) return null;
   for (const p of s.players) {
+    if (sv.v === 3) {
+      // v3 predates wave max HP: grant what the hero would have earned so far
+      p.vigorHp = vigorHpAt(s.wave.n);
+      refreshStats(p);
+    }
     p.px = p.x;
     p.py = p.y;
     p.anchorX = p.x;

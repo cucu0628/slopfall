@@ -24,7 +24,7 @@ export function buildCharSelect(onPick: (id: string) => void): void {
   for (const id of CHARACTER_IDS) {
     const c = CHARACTERS[id];
     const w = WEAPONS[c.weapon];
-    const card = el('div', 'char-card');
+    const card = el('div', 'char-card panel accent');
     card.style.setProperty('--c', c.accent);
     const top = el('div', 'top');
     top.appendChild(portrait(id));

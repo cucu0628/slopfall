@@ -44,4 +44,32 @@ describe('map, movement and anti-AFK', () => {
       expect(mover.hazards.some((h) => h.kind === 'skyfall')).toBe(false);
     }
   });
+
+  it('does not drop meteors on a player who keeps dodging inside a small area', () => {
+    const cmd = (s: ReturnType<typeof createGame>, mx: number, my: number) =>
+      ({ mx, my, ax: 1, ay: 0, ability: false, dash: false, choose: s.players[0].choices ? 0 : -1 });
+    // strafing left-right, 1 s each way: never more than ~150 px from where it started
+    const strafe = createGame(13, [{ id: 'p1', charId: 'knight' }], { godMode: true });
+    for (let i = 0; i < 60 * 20; i++) {
+      step(strafe, { p1: cmd(strafe, Math.floor(i / 60) % 2 ? -1 : 1, 0) });
+      expect(strafe.hazards.some((h) => h.kind === 'skyfall')).toBe(false);
+    }
+    // tight circles around one spot
+    const circle = createGame(14, [{ id: 'p1', charId: 'knight' }], { godMode: true });
+    for (let i = 0; i < 60 * 20; i++) {
+      step(circle, { p1: cmd(circle, Math.cos(i / 25), Math.sin(i / 25)) });
+      expect(circle.hazards.some((h) => h.kind === 'skyfall')).toBe(false);
+    }
+  });
+
+  it('still punishes camping with an occasional tap', () => {
+    const s = createGame(15, [{ id: 'p1', charId: 'knight' }], { godMode: true });
+    const meteors = new Set<number>();
+    for (let i = 0; i < 60 * 24; i++) {
+      const tap = i % 120 < 12; // moves 0.2 s out of every 2 s
+      step(s, { p1: { mx: tap ? (i % 240 < 120 ? 1 : -1) : 0, my: 0, ax: 1, ay: 0, ability: false, dash: false, choose: s.players[0].choices ? 0 : -1 } });
+      for (const h of s.hazards) if (h.kind === 'skyfall') meteors.add(h.id);
+    }
+    expect(meteors.size).toBeGreaterThan(0);
+  });
 });

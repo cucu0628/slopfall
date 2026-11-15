@@ -89,6 +89,7 @@ export interface Player {
   dashCd: number;
   dashMaxCd: number;
   bonus: Record<string, number>; // stackable bonus upgrades taken after everything is maxed
+  vigorHp: number; // max HP gained from surviving waves (see VIGOR_EVERY)
   healBudget: number; // necromancer kill-heal limiter
   lsBudget: number; // lifesteal healing still allowed this second
   idleT: number; // seconds spent near the same spot (anti-AFK)
@@ -297,6 +298,7 @@ export type SimEvent =
   | { t: 'phurt'; pid: PlayerId; v: number }
   | { t: 'pdeath'; pid: PlayerId }
   | { t: 'heal'; pid: PlayerId; v: number }
+  | { t: 'vigor'; pid: PlayerId; v: number }
   | { t: 'levelup'; pid: PlayerId }
   | { t: 'wave'; n: number; boss: boolean }
   | { t: 'boss'; name: string }

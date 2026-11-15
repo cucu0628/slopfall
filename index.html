@@ -6,6 +6,10 @@
     <meta name="theme-color" content="#0b0d17" />
     <meta name="author" content="cucu0628" />
     <title>Nightfall Survivors</title>
+    <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
+    <link rel="icon" href="/favicon-32.png" type="image/png" sizes="32x32" />
+    <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
+    <link rel="manifest" href="/site.webmanifest" />
     <link rel="stylesheet" href="/src/client/ui/styles/index.css" />
   </head>
   <body>
@@ -14,16 +18,19 @@
       <section id="screen-menu" class="screen">
         <div class="menu-box">
           <h1>NIGHTFALL<span>SURVIVORS</span></h1>
-          <button id="btn-continue" class="btn primary continue hidden">
-            CONTINUE<span id="continue-info"></span>
-          </button>
-          <button id="btn-play" class="btn primary">NEW RUN</button>
-          <a
-            class="btn bug-report"
-            href="https://github.com/cucu0628/slopfall/issues/new?template=bug_report.yml"
-            target="_blank"
-            rel="noopener"
-          >Report a bug</a>
+          <div class="menu-actions">
+            <button id="btn-continue" class="btn btn-lg success continue hidden">
+              Continue<span id="continue-info"></span>
+            </button>
+            <button id="btn-play" class="btn btn-lg primary">New run</button>
+            <div class="menu-secondary">
+              <button id="btn-codex" class="btn btn-sm">Codex</button>
+              <button id="btn-export" class="btn btn-sm hidden">Export save</button>
+              <button id="btn-import" class="btn btn-sm">Import save</button>
+              <input id="import-file" type="file" accept=".json,application/json" hidden />
+            </div>
+            <p id="save-msg" class="save-msg hidden" role="status"></p>
+          </div>
           <div class="controls">
             <div><kbd>WASD</kbd> / <kbd>↑↓←→</kbd> move</div>
             <div><kbd>Mouse</kbd> aim</div>
@@ -36,7 +43,13 @@
             <div><b>★</b> ability · <b>»</b> dash · <b>❚❚</b> pause</div>
           </div>
         </div>
-        <a class="credit" href="https://github.com/cucu0628" target="_blank" rel="noopener">© 2026 cucu0628 · All rights reserved</a>
+        <a
+          class="corner-link bug-report"
+          href="https://github.com/cucu0628/slopfall/issues/new?template=bug_report.yml"
+          target="_blank"
+          rel="noopener"
+        >Report a bug</a>
+        <a class="corner-link credit" href="https://github.com/cucu0628" target="_blank" rel="noopener">© 2026 cucu0628 · All rights reserved</a>
       </section>
 
       <section id="screen-chars" class="screen hidden">
@@ -45,31 +58,48 @@
         <button id="btn-back" class="btn">Back</button>
       </section>
 
+      <section id="screen-codex" class="screen hidden">
+        <div class="tome">
+          <header class="tome-head">
+            <h2>Codex</h2>
+            <p class="tome-sub">A bestiary of the night</p>
+          </header>
+          <div id="codex-tabs" class="tome-tabs" role="tablist"></div>
+          <div class="tome-spread">
+            <nav id="codex-index" class="tome-index" aria-label="Codex entries"></nav>
+            <article id="codex-page" class="tome-page" aria-live="polite"></article>
+          </div>
+        </div>
+        <button id="btn-codex-back" class="btn">Back</button>
+      </section>
+
       <section id="screen-levelup" class="screen overlay hidden">
-        <h2 id="levelup-title" class="glow-blue">LEVEL UP!</h2>
+        <h2 id="levelup-title" class="glow-blue">Level up!</h2>
         <div id="levelup-cards" class="cards"></div>
         <p class="hint hint-keys">Press <kbd>1</kbd> <kbd>2</kbd> <kbd>3</kbd> or click</p>
         <p class="hint hint-touch">Tap a card</p>
       </section>
 
       <section id="screen-pause" class="screen overlay hidden">
-        <h2>PAUSED</h2>
-        <div class="pause-cols">
+        <h2>Paused</h2>
+        <div class="panel pause-cols">
           <div><h3>Stats</h3><table id="pause-stats" class="stats"></table></div>
           <div><h3>Arsenal</h3><div id="pause-arsenal" class="arsenal"></div></div>
         </div>
-        <div class="row">
+        <div class="row actions">
           <button id="btn-resume" class="btn primary">Resume</button>
           <button id="btn-quit" class="btn">Quit to menu</button>
         </div>
       </section>
 
       <section id="screen-over" class="screen overlay hidden">
-        <h2 class="glow-red">YOU HAVE FALLEN</h2>
-        <div id="over-summary" class="summary"></div>
-        <h3>Damage dealt</h3>
-        <table id="over-damage" class="stats damage"></table>
-        <div class="row">
+        <h2 class="glow-red">You have fallen</h2>
+        <div class="panel over-panel">
+          <div id="over-summary" class="summary"></div>
+          <h3>Damage dealt</h3>
+          <table id="over-damage" class="stats damage"></table>
+        </div>
+        <div class="row actions">
           <button id="btn-retry" class="btn primary">Retry</button>
           <button id="btn-change" class="btn">Change hero</button>
           <button id="btn-menu" class="btn">Main menu</button>

@@ -43,6 +43,8 @@ src/
       heroes/             one file per hero figure + shared drawing primitives
     ui/                   HTML overlay screens (dom.ts, charSelect, levelUp, pause, gameOver) and styles/*.css
 tests/                    vitest suites by topic + helpers.ts (deterministic bot, run())
+public/                   copied as-is into dist/: icon.svg (app icon), favicon.svg (simplified for tabs),
+                          PNG renders of them and site.webmanifest. Re-render the PNGs when an SVG changes.
 ```
 
 Data flow: `client` turns input into an `InputCmd` → `step(state, { [playerId]: cmd })` advances the sim → the sim pushes `state.events` (hits, kills, explosions, level-ups...) → `session.ts` turns events into particles, numbers and sounds → `renderer.ts` draws `GameState`.
@@ -72,9 +74,9 @@ The simulation must stay **deterministic** and **serializable** – this is what
 
 **New perk** – add a `PerkDef` to `content/perks.ts`. `apply(stats, power)` receives the rarity-weighted sum of level-ups; if you need a new stat add it to `Stats` (types.ts) and its default in `computeStats` (systems/leveling.ts). Set `rarity: false` for integer effects.
 
-**New enemy** – data row in `content/enemies.ts` (`unlock` wave, spawn `cost`, `group` size), behaviour case in `updateRegular` (systems/enemies.ts) if it is not a plain chaser, artwork case in `render/entities/enemies.ts`.
+**New enemy** – data row in `content/enemies.ts` (`unlock` wave, spawn `cost`, `group` size), behaviour case in `updateRegular` (systems/enemies.ts) if it is not a plain chaser, artwork case in `render/entities/enemies.ts`, and a Codex description in `client/ui/codexEntries.ts` (a test checks every enemy has one).
 
-**New boss** – data row with `boss: true`, a behaviour file in `systems/bosses/` registered in its `index.ts` (`init` timers + `update`), add the id to `BOSS_ORDER`, artwork in `render/entities/bosses.ts`.
+**New boss** – data row with `boss: true`, a behaviour file in `systems/bosses/` registered in its `index.ts` (`init` timers + `update`), add the id to `BOSS_ORDER`, artwork in `render/entities/bosses.ts`, Codex description in `client/ui/codexEntries.ts`.
 
 **New hero** – entry in `content/characters.ts` (stats, starting weapon, passive mods, ability), ability logic in `systems/abilities.ts`, figure in `render/heroes/<name>.ts` registered in `render/heroes/index.ts`.
 
@@ -96,6 +98,7 @@ When tuning, measure instead of guessing: write a throwaway vitest that builds a
 - Player-facing text is English.
 - Keep files focused; prefer adding a new file under the right folder over growing a big one.
 - Rendering uses procedural vector graphics only (no image assets). Glows use `glow()` from `render/sprites.ts`, not `shadowBlur`.
+- UI styling uses the design tokens in `client/ui/styles/base.css` (`--s-*` spacing, `--fs-*` type sizes, `--r-*` radii, colours, `--shadow-*`) and its primitives (`.panel`, `.panel.accent` with `--c`, `.btn` + `primary`/`success` + `btn-sm`/`btn-lg`, `h2` screen titles, `h3`/`.label` micro labels). Don't add raw sizes or colours in other stylesheets.
 - Mobile matters: test layouts at phone sizes (e.g. 390×844 and 844×390) when touching UI or CSS.
 
 ## Deployment and license

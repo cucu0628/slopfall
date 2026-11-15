@@ -25,7 +25,9 @@ On phones and tablets on-screen controls appear automatically: drag on the left 
 - **6 heroes**, each with a starting weapon, a passive and an active ability (Knight, Mage, Ranger, Necromancer, Engineer, Berserker).
 - **10 weapons** (8 levels each). At max level a chest unlocks an **evolution**; five weapons have two evolution paths (each needs a different perk) and the player picks one.
 - **14 perks** (incl. Vampirism lifesteal and Ignite burn); level-ups can roll **Rare** (×1.4) or **Epic** (×1.8) strength. Max 6 weapon + 6 perk slots.
-- The current run is **saved in the browser** (every few seconds and when the tab is hidden/closed) and can be continued from the main menu.
+- The current run is **saved in the browser** (every few seconds and when the tab is hidden/closed) and can be continued from the main menu. Saves can be **exported to a file and imported** (e.g. to move a run to another device).
+- The main menu has a **Codex** describing every enemy and boss.
+- Heroes gain **+5 max HP after every 5th wave**, even without HP perks.
 - **9 enemy types** + elites, **6 bosses** every 5th wave (two at once from wave 20), endless scaling waves, anti-AFK meteors.
 
 ## License

@@ -209,6 +209,11 @@ export class Session {
         case 'heal':
           if (ev.pid === LOCAL_ID) fx.text(me.x, me.y - 24, `+${ev.v}`, '#6bff8f', 15);
           break;
+        case 'vigor':
+          if (ev.pid !== LOCAL_ID) break;
+          fx.toast(`+${ev.v} MAX HP`, 'Surviving the night hardens you', '#6bff8f');
+          fx.ring(me.x, me.y, 110, '#6bff8f', 0.6, 6);
+          break;
         case 'levelup':
           if (ev.pid === LOCAL_ID) {
             fx.ring(me.x, me.y, 120, '#4fa3ff', 0.5, 6);

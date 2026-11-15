@@ -1,47 +1,64 @@
-/* Small screens and phones. */
+/* Small screens and phones: portrait (max-width 620px) and landscape
+   (max-height 520px). Only spacing and sizes change; the look stays the same. */
 
-/* small / phone screens */
-@media (max-height: 520px), (max-width: 620px) {
-  .card {
-    width: min(300px, 88vw);
-    min-height: 0;
-    padding: 12px;
-    gap: 5px;
+@media (max-width: 620px), (max-height: 520px) {
+  .screen {
+    --gap: var(--s-4);
   }
 
-  .card .icon {
-    font-size: 30px;
+  :root {
+    --fs-title: 24px;
+  }
+
+  h2::after {
+    width: 120px;
+    margin-top: 6px;
   }
 
   .menu-box {
-    gap: 18px;
+    gap: var(--s-5);
   }
 
-  .pause-cols {
-    gap: 14px;
-    padding: 12px;
+  .btn-lg {
+    min-height: 48px;
+    font-size: var(--fs-md);
   }
-}
 
-@media (max-height: 520px) {
+  .btn.continue {
+    min-height: 56px;
+  }
+
+  .row.actions .btn {
+    min-width: 0;
+    flex: 1 1 0;
+    padding: 0 var(--s-2);
+    font-size: var(--fs-sm);
+    letter-spacing: 0.04em;
+  }
+
+  .row.actions {
+    width: min(460px, 100%);
+    gap: var(--s-2);
+  }
+
+  /* level-up cards */
   .card {
-    width: 190px;
-  }
-}
-
-/* phones: compact character select and pause menu */
-@media (max-width: 620px), (max-height: 520px) {
-  .screen {
-    --gap: 12px;
+    width: min(300px, 100%);
+    min-height: 0;
+    padding: var(--s-4) var(--s-3) var(--s-3);
+    gap: 6px;
   }
 
-  h2 {
-    font-size: 24px;
+  .card .icon {
+    width: 48px;
+    height: 48px;
+    font-size: 26px;
   }
 
+  /* hero cards */
   .char-card {
-    padding: 10px 12px;
-    gap: 3px;
+    padding: var(--s-3);
+    gap: 6px;
   }
 
   .char-card canvas {
@@ -50,7 +67,7 @@
   }
 
   .char-card .name {
-    font-size: 18px;
+    font-size: var(--fs-lg);
   }
 
   .char-card .line,
@@ -58,60 +75,42 @@
     font-size: 12px;
   }
 
-  .char-card .ability {
-    padding: 6px 8px;
-  }
-
+  /* pause: stats and arsenal stacked, each in two columns so the menu stays short */
   .pause-cols {
     width: min(100%, 520px);
     flex-direction: column;
-    gap: 10px;
+    gap: var(--s-4);
+    padding: var(--s-4);
   }
 
-  .stats {
-    font-size: 13px;
-    min-width: 0;
-    width: 100%;
+  .pause-cols > div {
+    width: auto;
   }
 
-  .stats td {
-    padding: 2px 6px;
-  }
-
+  #pause-stats tbody,
   .arsenal {
-    font-size: 13px;
-    min-width: 0;
-    gap: 4px;
-  }
-
-  .btn.primary {
-    font-size: 18px;
-    padding: 12px 34px;
-  }
-}
-
-/* small screens: stats and arsenal in two columns so the pause menu stays short */
-@media (max-width: 620px), (max-height: 520px) {
-  #pause-stats tbody {
     display: grid;
     grid-template-columns: 1fr 1fr;
-    column-gap: 16px;
+    column-gap: var(--s-4);
   }
 
   #pause-stats tr {
     display: flex;
     justify-content: space-between;
+    border-top: 1px solid var(--line-faint);
   }
 
-  .arsenal {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    column-gap: 12px;
+  #pause-stats tr td {
+    border-top: 0;
+  }
+
+  .stats td {
+    padding: 3px var(--s-1);
   }
 
   .arsenal .it {
     min-width: 0;
-    gap: 5px;
+    border-top: 1px solid var(--line-faint);
   }
 
   .arsenal .it span:nth-child(2) {
@@ -120,13 +119,29 @@
     white-space: nowrap;
   }
 
-  .arsenal .ic {
-    width: 20px;
-    font-size: 15px;
+  /* game over */
+  .over-panel {
+    padding: var(--s-4);
+  }
+
+  .summary {
+    gap: var(--s-2);
+    margin-bottom: var(--s-4);
+  }
+
+  .summary .v {
+    font-size: var(--fs-lg);
   }
 }
 
-/* landscape phones: stats and arsenal side by side */
+@media (max-width: 400px) {
+  .summary .k {
+    letter-spacing: 0.06em;
+  }
+}
+
+/* landscape phones: little height, so stats and arsenal go side by side again
+   and the level-up cards shrink to fit one row */
 @media (max-height: 520px) and (min-width: 621px) {
   .pause-cols {
     flex-direction: row;
@@ -134,10 +149,19 @@
     max-width: 100%;
   }
 
-  /* no height to spare for a third menu button: move it to the corner opposite the credit */
-  .btn.bug-report {
-    position: absolute;
-    left: calc(16px + env(safe-area-inset-left));
-    bottom: calc(8px + env(safe-area-inset-bottom));
+  .pause-cols > div {
+    width: 260px;
+  }
+
+  .card {
+    width: 200px;
+  }
+
+  .card .icon {
+    display: none;
+  }
+
+  .menu-box {
+    gap: var(--s-4);
   }
 }
