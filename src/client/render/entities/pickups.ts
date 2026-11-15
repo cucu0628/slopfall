@@ -1,7 +1,7 @@
-// XP gems, heals, magnets, bombs and chests.
+// XP gems, heals, magnets, bombs, chests and Goldfang's coins and treasure.
 
 import type { Pickup } from '../../../sim/types';
-import { Ctx, circle } from './shared';
+import { Ctx, TAU, circle } from './shared';
 
 // ---------------------------------------------------------------- pickups
 export function gemColor(v: number): string {
@@ -18,6 +18,8 @@ export function pickupColor(p: Pickup): string {
     case 'magnet': return '#5d9bff';
     case 'bomb': return '#ffb347';
     case 'chest': return '#ffd166';
+    case 'coin':
+    case 'relic': return '#ffc83d';
   }
 }
 
@@ -89,5 +91,52 @@ export function drawPickup(ctx: Ctx, p: Pickup, x: number, y: number, t: number)
       ctx.strokeRect(x - 14 * s, yy - 12 * s, 28 * s, 22 * s);
       break;
     }
+    case 'coin':
+      drawCoin(ctx, x, yy, 7, t + p.id);
+      break;
+    case 'relic': {
+      // Goldfang's treasure sack, spilling light
+      const pulse = 0.6 + Math.sin(t * 5) * 0.4;
+      ctx.strokeStyle = `rgba(255,200,61,${0.35 + pulse * 0.3})`;
+      ctx.lineWidth = 3;
+      for (let i = 0; i < 8; i++) {
+        const a = t * 0.8 + (i * TAU) / 8;
+        ctx.beginPath();
+        ctx.moveTo(x + Math.cos(a) * 22, yy + Math.sin(a) * 22);
+        ctx.lineTo(x + Math.cos(a) * (30 + pulse * 6), yy + Math.sin(a) * (30 + pulse * 6));
+        ctx.stroke();
+      }
+      ctx.fillStyle = '#8a5a2b';
+      ctx.beginPath();
+      ctx.moveTo(x - 6, yy - 12);
+      ctx.quadraticCurveTo(x - 20, yy + 2, x - 14, yy + 14);
+      ctx.lineTo(x + 14, yy + 14);
+      ctx.quadraticCurveTo(x + 20, yy + 2, x + 6, yy - 12);
+      ctx.closePath();
+      ctx.fill();
+      ctx.fillStyle = '#ffc83d';
+      ctx.fillRect(x - 7, yy - 14, 14, 4);
+      ctx.font = 'bold 14px sans-serif';
+      ctx.textAlign = 'center';
+      ctx.fillText('$', x, yy + 9);
+      break;
+    }
   }
+}
+
+/** A spinning gold coin; also used for Goldfang's fake coins and the coin weapon. */
+export function drawCoin(ctx: Ctx, x: number, y: number, r: number, t: number, tint = '#ffc83d'): void {
+  const sx = Math.max(0.2, Math.abs(Math.cos(t * 4)));
+  ctx.fillStyle = '#b8860b';
+  ctx.beginPath();
+  ctx.ellipse(x, y, r * sx, r, 0, 0, TAU);
+  ctx.fill();
+  ctx.fillStyle = tint;
+  ctx.beginPath();
+  ctx.ellipse(x, y, r * sx * 0.78, r * 0.78, 0, 0, TAU);
+  ctx.fill();
+  ctx.fillStyle = 'rgba(255,255,255,0.55)';
+  ctx.beginPath();
+  ctx.ellipse(x - r * sx * 0.25, y - r * 0.3, r * sx * 0.2, r * 0.25, 0, 0, TAU);
+  ctx.fill();
 }

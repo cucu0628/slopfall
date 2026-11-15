@@ -1,9 +1,11 @@
 // Boss behaviours. Every boss has its own file; register it here by its
-// enemy id (content/enemies.ts) and add it to BOSS_ORDER to make it spawn.
+// enemy id (content/enemies.ts) and add it to BOSS_ORDER to make it spawn
+// (the secret boss is spawned by systems/secret.ts instead).
 
 import type { Enemy, GameState, Player } from '../../types';
 import { broodMother } from './broodMother';
 import { wyrm } from './frostWyrm';
+import { goldfang, initGoldfang } from './goldfang';
 import { golem } from './golem';
 import { necroLord } from './necroLord';
 import { slimeKing } from './slimeKing';
@@ -52,6 +54,10 @@ const BOSSES: Record<string, BossBehavior> = {
     init: (e) => { e.t = 2.5; e.t2 = 6; e.t3 = 2; },
     update: (b) => wyrm(b.s, b.e, b.target, b.d, b.nx, b.ny, b.sp, b.dt, b.enraged),
   },
+  goldfang: {
+    init: initGoldfang,
+    update: (b) => goldfang(b.s, b.e, b.d, b.nx, b.ny, b.sp, b.dt, b.enraged),
+  },
 };
 
 export function initBoss(e: Enemy): void {
@@ -66,3 +72,4 @@ export function updateBoss(
 }
 
 export { wyrmSegmentRadius } from './frostWyrm';
+export { COIN_FUSE, GOLDFANG_ESCAPE } from './goldfang';

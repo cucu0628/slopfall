@@ -3,6 +3,7 @@
 
 import { BOSS_ORDER, ENEMIES, WAVE_ENEMY_IDS, type EnemyDef } from '../../sim/content/enemies';
 import { spawnEnemy } from '../../sim/entities';
+import { SECRET_CHANCE, SECRET_FIRST_WAVE } from '../../sim/systems/secret';
 import { BOSS_EVERY } from '../../sim/systems/waves';
 import type { Enemy } from '../../sim/types';
 import { createGame } from '../../sim/world';
@@ -33,6 +34,11 @@ const CHAPTERS: Chapter[] = [
     title: 'Bosses',
     note: `One arrives every ${BOSS_EVERY} waves, two at once from wave 20. Below 50% HP they become <b>enraged</b>.`,
     ids: BOSS_ORDER,
+  },
+  {
+    title: 'Secrets',
+    note: `Rare guests. From wave ${SECRET_FIRST_WAVE} each boss wave has a ${Math.round(SECRET_CHANCE * 100)}% chance to bring one instead of the boss, at most once per run.`,
+    ids: Object.keys(ENEMIES).filter((id) => ENEMIES[id].boss && !BOSS_ORDER.includes(id)),
   },
 ];
 
@@ -84,6 +90,7 @@ function copyCanvas(src: HTMLCanvasElement, size: number): HTMLCanvasElement {
 }
 
 function tagFor(d: EnemyDef): string {
+  if (d.boss && !BOSS_ORDER.includes(d.id)) return `Secret boss · rare, from wave ${SECRET_FIRST_WAVE}`;
   if (d.boss) return `Boss · wave ${(BOSS_ORDER.indexOf(d.id) + 1) * BOSS_EVERY}`;
   return d.unlock > 0 ? `From wave ${d.unlock}` : `Summoned by ${SUMMONED_BY[d.id] ?? 'other enemies'}`;
 }

@@ -12,6 +12,8 @@ export interface PerkDef {
   desc: (m: number) => string;
   /** `power` = sum of all taken level-ups weighted by their rarity. */
   apply: (s: Stats, power: number) => void;
+  /** Only granted by the secret boss: never offered on level-up and takes no slot. */
+  unique?: boolean;
 }
 
 /** Common / Rare / Epic: effect multiplier and roll chance of a perk level-up. */
@@ -66,10 +68,16 @@ const defs: PerkDef[] = [
   { id: 'burn', name: 'Ignite', icon: '♨', color: '#ff7a1a', max: 5, rarity: true,
     desc: (m) => `+${pct(8 * m)} chance to set enemies on fire (3s burn)`,
     apply: (s, p) => { s.burn += 0.08 * p; } },
+  { id: 'goldpurse', name: "Goldfang's Purse", icon: '$', color: '#ffc83d', max: 1, rarity: false, unique: true,
+    desc: () => '+25% experience, 5% chance for a gem to count twice, but -10% max HP (the sack is heavy)',
+    apply: (s) => { s.growth += 0.25; s.gemDouble += 0.05; s.maxHpMul *= 0.9; } },
 ];
 
 export const PERKS: Record<string, PerkDef> = Object.fromEntries(defs.map((d) => [d.id, d]));
-export const PERK_IDS = defs.map((d) => d.id);
+/** Perks that level-ups may offer; unique ones are excluded. */
+export const PERK_IDS = defs.filter((d) => !d.unique).map((d) => d.id);
+/** Owned perks that count against MAX_SLOTS. */
+export const slottedPerks = (ks: readonly { id: string }[]) => ks.filter((k) => !PERKS[k.id].unique).length;
 
 /** Endless stackable upgrades offered once every weapon and perk is maxed. */
 export interface BonusDef {

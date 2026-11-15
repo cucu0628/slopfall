@@ -526,7 +526,8 @@
   }
 }
 
-@media (max-width: 400px) {
+/* four chapter tabs: drop the entry counts before the labels run out of room */
+@media (max-width: 520px) {
   .tome-tab span {
     display: none;
   }

@@ -21,6 +21,8 @@ export interface WeaponDef {
   levels: Partial<WStats>[]; // deltas for levels 2..8
   /** Evolution paths. Each needs its perk owned; when several qualify the player picks one. */
   evos: EvoDef[];
+  /** Only granted by the secret boss: never offered as a new weapon and takes no slot. */
+  unique?: boolean;
 }
 
 export interface EvoDef {
@@ -129,10 +131,22 @@ const defs: WeaponDef[] = [
       { id: 'abszero', perk: 'swift', name: 'Absolute Zero', desc: 'Shards freeze enemies solid.', stats: { amount: 8, dmg: 12, pierce: 3 } },
     ],
   },
+  {
+    // pierce = ricochets; a coin that kills gets a bonus ricochet (systems/weapons/coins.ts)
+    id: 'coins', name: "Goldfang's Coin Toss", icon: '¤', color: '#ffc83d', unique: true,
+    desc: 'Tosses a fan of gold coins that ricochet between enemies. Kills earn extra bounces.',
+    base: { dmg: 15, cd: 1.1, amount: 3, area: 1, speed: 620, pierce: 2, duration: 1.4, knock: 50 },
+    levels: [{ dmg: 5 }, { amount: 1 }, { pierce: 1 }, { cd: -0.15 }, { dmg: 7 }, { amount: 1 }, { dmg: 8, pierce: 2 }],
+    evos: [],
+  },
 ];
 
 export const WEAPONS: Record<string, WeaponDef> = Object.fromEntries(defs.map((d) => [d.id, d]));
-export const WEAPON_IDS = defs.map((d) => d.id);
+/** Weapons that level-ups may offer as new; unique ones are excluded. */
+export const WEAPON_IDS = defs.filter((d) => !d.unique).map((d) => d.id);
+export const UNIQUE_WEAPON_IDS = defs.filter((d) => d.unique).map((d) => d.id);
+/** Owned weapons that count against MAX_SLOTS. */
+export const slottedWeapons = (ws: readonly WeaponInst[]) => ws.filter((w) => !WEAPONS[w.id].unique).length;
 
 const STAT_KEYS: (keyof WStats)[] = ['dmg', 'cd', 'amount', 'area', 'speed', 'pierce', 'duration', 'knock'];
 

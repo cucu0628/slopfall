@@ -51,4 +51,19 @@ describe('saving runs', () => {
     expect(r.players[0].vigorHp).toBe(10);
     expect(r.players[0].stats.maxHp).toBe(s.players[0].stats.maxHp + 10);
   });
+
+  it('upgrades a v4 save that predates the secret boss', () => {
+    const s = createGame(50, [{ id: 'p1', charId: 'mage' }], { godMode: true });
+    s.wave.n = 12;
+    const save = JSON.parse(JSON.stringify(snapshot(s, 0)));
+    save.v = 4;
+    delete save.state.secret;
+    delete save.state.players[0].stats.gemDouble;
+    delete save.state.players[0].stats.maxHpMul;
+    const r = restore(save)!;
+    expect(r).not.toBeNull();
+    expect(r.secret.wave === 0 || r.secret.wave > 12).toBe(true);
+    expect(r.players[0].stats.gemDouble).toBe(0);
+    expect(r.players[0].stats.maxHp).toBe(s.players[0].stats.maxHp);
+  });
 });

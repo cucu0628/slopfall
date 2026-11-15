@@ -1,6 +1,7 @@
 // Enemy projectiles and boss hazards (slams, shockwaves, lasers, meteors).
 
 import type { EnemyProjectile, Hazard } from '../../../sim/types';
+import { drawCoin } from './pickups';
 import { Ctx, TAU, circle } from './shared';
 
 // ---------------------------------------------------------------- hostile
@@ -108,6 +109,26 @@ export function drawHazard(ctx: Ctx, h: Hazard, t: number): void {
         circle(ctx, h.x, h.y, h.r * p);
         ctx.fill();
       }
+      break;
+    }
+    case 'coin': {
+      // a fake coin looks exactly like a real one until a player steps close
+      const yy = h.y + Math.sin(t * 4 + h.id) * 2;
+      if (h.speed === 0) {
+        drawCoin(ctx, h.x, yy, 7, t + h.id);
+        break;
+      }
+      const p = 1 - h.warn / (h.maxWarn || 1);
+      ctx.fillStyle = 'rgba(255,60,40,0.14)';
+      circle(ctx, h.x, h.y, h.r);
+      ctx.fill();
+      ctx.strokeStyle = `rgba(255,80,60,${0.5 + Math.sin(t * 30) * 0.4})`;
+      ctx.lineWidth = 3;
+      ctx.stroke();
+      ctx.fillStyle = 'rgba(255,60,40,0.28)';
+      circle(ctx, h.x, h.y, h.r * p);
+      ctx.fill();
+      drawCoin(ctx, h.x, yy, 7 + p * 4, t * 3, Math.sin(t * 40) > 0 ? '#ff4d4d' : '#ffc83d');
       break;
     }
     case 'ring': {

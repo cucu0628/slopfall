@@ -80,7 +80,7 @@ export class Renderer {
     this.world.drawGround(ctx, seed, minX, minY, maxX, maxY);
 
     // ground telegraphs
-    for (const h of s.hazards) if (h.kind === 'slam' || h.kind === 'skyfall') drawHazard(ctx, h, t);
+    for (const h of s.hazards) if (h.kind === 'slam' || h.kind === 'skyfall' || h.kind === 'coin') drawHazard(ctx, h, t);
     for (const z of s.zones) if (z.kind === 'meteor' || z.kind === 'rain') drawZone(ctx, z, t);
 
     // auras
@@ -141,7 +141,7 @@ export class Renderer {
     for (const pk of s.pickups) {
       const x = lerp(pk.px, pk.x, alpha), y = lerp(pk.py, pk.y, alpha);
       if (!vis(x, y)) continue;
-      glow(ctx, pickupColor(pk), x, y, pk.kind === 'chest' ? 50 : pk.kind === 'xp' ? 16 : 26, 0.6);
+      glow(ctx, pickupColor(pk), x, y, pk.kind === 'chest' || pk.kind === 'relic' ? 50 : pk.kind === 'xp' ? 16 : 26, 0.6);
     }
     for (const e of s.enemies) {
       if (!(e.boss || e.elite || e.type === 'exploder' || e.type === 'shaman')) continue;

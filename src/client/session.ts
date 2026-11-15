@@ -179,7 +179,14 @@ export class Session {
           break;
         case 'kill': {
           const color = ENEMIES[ev.type]?.color ?? '#fff';
-          if (ev.boss) {
+          if (ev.boss && ev.type === 'goldfang') {
+            fx.burst(ev.x, ev.y, '#ffc83d', 90, 520, 6, 1.3);
+            fx.ring(ev.x, ev.y, 260, '#ffc83d', 0.8, 12);
+            fx.addShake(18);
+            fx.banner('GOLDFANG CAUGHT!', 'He dropped his treasure. Grab it!', '#ffc83d', 3);
+            snd?.play('victory');
+            snd?.play('coin');
+          } else if (ev.boss) {
             fx.burst(ev.x, ev.y, color, 80, 500, 7, 1.2);
             fx.burst(ev.x, ev.y, '#ffffff', 40, 300, 4, 0.8);
             fx.ring(ev.x, ev.y, 300, color, 0.8, 14);
@@ -227,9 +234,27 @@ export class Session {
           }
           break;
         case 'boss':
+          if (ev.id === 'goldfang') {
+            fx.banner(ev.name.toUpperCase(), 'A secret merchant! Catch him before he escapes', '#ffc83d', 3.5);
+            snd?.play('coin');
+            break;
+          }
           fx.banner(ev.name.toUpperCase(), `Wave ${s.wave.n} boss`, '#ff2e88', 3);
           fx.addShake(10);
           snd?.play('boss');
+          break;
+        case 'escape':
+          fx.burst(ev.x, ev.y, '#ffc83d', 50, 300, 4, 0.9);
+          fx.banner('HE GOT AWAY!', `${ev.name} vanished with all his gold...`, '#aab4d4', 3);
+          snd?.play('coin');
+          break;
+        case 'unique':
+          if (ev.pid !== LOCAL_ID) break;
+          fx.banner('UNIQUE ITEM!', ev.name, '#ffc83d', 3.5);
+          fx.toast(ev.name.toUpperCase(), ev.desc);
+          fx.ring(me.x, me.y, 220, '#ffc83d', 0.8, 10);
+          fx.burst(me.x, me.y, '#ffc83d', 60, 320, 5, 1);
+          snd?.play('chest');
           break;
         case 'explode':
           fx.ring(ev.x, ev.y, ev.r, ev.color, 0.45, ev.r > 300 ? 20 : 8);
@@ -241,7 +266,8 @@ export class Session {
         case 'pickup':
           if (ev.pid !== LOCAL_ID) break;
           if (ev.kind === 'xp') snd?.play('gem');
-          else if (ev.kind !== 'chest') {
+          else if (ev.kind === 'coin') snd?.play('coin');
+          else if (ev.kind !== 'chest' && ev.kind !== 'relic') {
             snd?.play('pickup');
             const label = ev.kind === 'heal' ? 'HEAL' : ev.kind === 'magnet' ? 'MAGNET' : 'BOMB!';
             fx.text(me.x, me.y - 34, label, '#ffffff', 16, 1);

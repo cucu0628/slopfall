@@ -5,6 +5,7 @@ import { addZone } from '../../entities';
 import { forEnemiesInCircle, nearestEnemy } from '../../spatial';
 import type { GameState, Projectile } from '../../types';
 import { TAU, findPlayer } from './shared';
+import { COIN_BOUNCE_RANGE, COIN_KILL_BOUNCES } from './coins';
 
 // ---------------------------------------------------------------------------
 /** Mortar shell explosion: a one-shot area zone (radius stored in `data`). */
@@ -20,6 +21,16 @@ export function steer(pr: Projectile, tx: number, ty: number, turn: number): voi
   const a = cur + diff;
   pr.vx = Math.cos(a) * pr.speed;
   pr.vy = Math.sin(a) * pr.speed;
+}
+
+/** Coin ricochet: flies on toward the nearest enemy it has not hit yet. */
+function ricochet(s: GameState, pr: Projectile): void {
+  const t = nearestEnemy(s, pr.x, pr.y, COIN_BOUNCE_RANGE, (e) => pr.hits[e.id] !== undefined);
+  if (!t) return;
+  const dx = t.x - pr.x, dy = t.y - pr.y, d = Math.hypot(dx, dy) || 1;
+  pr.vx = (dx / d) * pr.speed;
+  pr.vy = (dy / d) * pr.speed;
+  pr.life = Math.max(pr.life, 0.6); // enough time to reach the next target
 }
 
 export function updateProjectiles(s: GameState, dt: number): void {
@@ -85,16 +96,25 @@ export function updateProjectiles(s: GameState, dt: number): void {
         kx = dx / d;
         ky = dy / d;
       }
-      damageEnemy(s, e, pr.dmg, owner, pr.src, kx, ky, pr.knock);
+      const killed = damageEnemy(s, e, pr.dmg, owner, pr.src, kx, ky, pr.knock);
       if (pr.slow > 0) slowEnemy(e, pr.slow, pr.slow > 0.8 ? 2 : 1.5);
       if (pr.hitRate > 0) {
         pr.hits[e.id] = s.time + pr.hitRate;
       } else {
         pr.hits[e.id] = 1e9;
+        // coins: a kill earns a bonus bounce (data counts them)
+        if (pr.kind === 'coin' && killed && pr.data < COIN_KILL_BOUNCES) {
+          pr.data++;
+          pr.pierce++;
+        }
         pr.pierce--;
         if (pr.pierce < 0) {
           pr.dead = true;
           if (pr.kind === 'shell') detonate(s, pr);
+          return true;
+        }
+        if (pr.kind === 'coin') {
+          ricochet(s, pr);
           return true;
         }
       }

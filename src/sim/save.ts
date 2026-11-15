@@ -5,11 +5,14 @@
 
 import { CHARACTERS } from './content/characters';
 import { refreshStats } from './systems/leveling';
+import { rollSecret } from './systems/secret';
 import { vigorHpAt } from './systems/waves';
 import type { GameState } from './types';
 
 /** Bump when GameState changes shape so old saves are ignored instead of breaking. */
-export const SAVE_VERSION = 4;
+export const SAVE_VERSION = 5;
+/** Older versions restore() can still upgrade. */
+const UPGRADABLE = [3, 4];
 
 export interface RunSave {
   v: number;
@@ -28,7 +31,7 @@ export function snapshot(s: GameState, savedAt: number): RunSave {
     hazards: [],
     turrets: [],
     minions: [],
-    pickups: s.pickups.filter((p) => p.kind === 'chest' && !p.dead),
+    pickups: s.pickups.filter((p) => (p.kind === 'chest' || p.kind === 'relic') && !p.dead),
     corpses: [],
     events: [],
   };
@@ -38,15 +41,20 @@ export function snapshot(s: GameState, savedAt: number): RunSave {
 /** Returns a playable state from a snapshot, or null if it is unusable. */
 export function restore(save: unknown): GameState | null {
   const sv = save as RunSave | null;
-  if (!sv || (sv.v !== SAVE_VERSION && sv.v !== 3) || !sv.state || !Array.isArray(sv.state.players)) return null;
+  if (!sv || (sv.v !== SAVE_VERSION && !UPGRADABLE.includes(sv.v)) || !sv.state || !Array.isArray(sv.state.players)) return null;
   const s = JSON.parse(JSON.stringify(sv.state)) as GameState;
   if (s.gameOver || s.players.length === 0 || s.players.some((p) => !CHARACTERS[p.charId] || p.dead)) return null;
+  if (sv.v < 5) {
+    // v4 and older predate the secret boss: he may still turn up later in the run
+    const secret = rollSecret(s.mapSeed);
+    s.secret = secret.wave > s.wave.n ? secret : { ...secret, wave: 0 };
+  }
   for (const p of s.players) {
     if (sv.v === 3) {
       // v3 predates wave max HP: grant what the hero would have earned so far
       p.vigorHp = vigorHpAt(s.wave.n);
-      refreshStats(p);
     }
+    if (sv.v < 5) refreshStats(p); // new stats (gemDouble, maxHpMul) get their defaults
     p.px = p.x;
     p.py = p.y;
     p.anchorX = p.x;

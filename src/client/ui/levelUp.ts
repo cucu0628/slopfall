@@ -21,8 +21,8 @@ export function optionView(o: UpgradeOption, charId: string): OptionView {
   if (o.kind === 'weapon') {
     const d = WEAPONS[o.id];
     const paths = d.evos.map((e) => `${e.name} (${PERKS[e.perk].name})`).join(' or ');
-    const evo = o.level === MAX_WEAPON_LEVEL
-      ? `Max level! Open a chest to evolve: ${paths}`
+    const evo = d.unique ? 'Unique: takes no weapon slot'
+      : o.level === MAX_WEAPON_LEVEL ? `Max level! Open a chest to evolve: ${paths}`
       : o.level === 1 ? `Evolves into ${paths}` : '';
     return { icon: d.icon, color: d.color, name: d.name, tag: o.level === 1 ? 'NEW WEAPON' : `LEVEL ${o.level}`, isNew: o.level === 1, desc: levelDesc(d, o.level), evo };
   }
