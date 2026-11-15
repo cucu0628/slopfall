@@ -1,93 +1,136 @@
-/* Pause and game over screens. */
+/* Pause and game over screens. Both are built from `.panel`. */
 
-/* Pause / game over */
-.pause-cols {
-  display: flex;
-  gap: 28px;
-  flex-wrap: wrap;
-  justify-content: center;
-  padding: 18px 22px;
-  border-radius: 14px;
-  background: var(--panel);
-  border: 1px solid var(--line);
-}
+/* ---------------------------------------------------------------- shared table */
 
 .stats {
+  width: 100%;
   border-collapse: collapse;
-  font-size: 14px;
-  min-width: 220px;
+  font-size: var(--fs-sm);
 }
 
 .stats td {
-  padding: 3px 10px;
+  padding: 5px var(--s-1);
+}
+
+.stats tr + tr td {
+  border-top: 1px solid var(--line-faint);
 }
 
 .stats td:last-child {
+  padding-left: var(--s-4);
   text-align: right;
   font-weight: 700;
   font-variant-numeric: tabular-nums;
+  white-space: nowrap;
 }
 
-.stats.damage {
-  padding: 10px;
-  border-radius: 12px;
-  background: var(--panel);
+/* ---------------------------------------------------------------- pause */
+
+.pause-cols {
+  display: flex;
+  gap: var(--s-6);
+  padding: var(--s-5);
+}
+
+.pause-cols > div {
+  width: 240px;
 }
 
 .arsenal {
   display: flex;
   flex-direction: column;
-  gap: 6px;
-  font-size: 14px;
-  min-width: 220px;
+  font-size: var(--fs-sm);
 }
 
 .arsenal .it {
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: var(--s-2);
+  padding: 5px var(--s-1);
+}
+
+.arsenal .it + .it {
+  border-top: 1px solid var(--line-faint);
 }
 
 .arsenal .ic {
-  width: 26px;
+  width: 22px;
+  flex: none;
   text-align: center;
-  font-size: 18px;
+  font-size: 16px;
 }
 
 .arsenal .lv {
   margin-left: auto;
   color: var(--muted);
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
 }
 
 .arsenal .evolved {
   color: var(--gold);
 }
 
+/* ---------------------------------------------------------------- game over */
+
+.over-panel {
+  width: min(460px, 100%);
+  padding: var(--s-5);
+}
+
 .summary {
   display: grid;
-  grid-template-columns: repeat(4, auto);
-  gap: 12px 26px;
-  padding: 16px 24px;
-  border-radius: 14px;
-  background: var(--panel);
-  border: 1px solid var(--line);
+  grid-template-columns: repeat(4, 1fr);
+  gap: var(--s-3);
+  margin-bottom: var(--s-5);
   text-align: center;
 }
 
-@media (max-width: 620px) {
-  .summary {
-    grid-template-columns: repeat(2, auto);
-  }
+.summary > div {
+  padding: var(--s-3) var(--s-1);
+  border-radius: var(--r-md);
+  background: var(--well);
 }
 
 .summary .v {
-  font-size: 26px;
+  font-size: var(--fs-xl);
   font-weight: 800;
+  font-variant-numeric: tabular-nums;
 }
 
 .summary .k {
-  font-size: 11px;
-  letter-spacing: 0.15em;
+  margin-top: 2px;
+  font-size: var(--fs-xs);
+  font-weight: 700;
+  letter-spacing: var(--track-label);
   text-transform: uppercase;
+  color: var(--muted);
+}
+
+.damage td {
+  vertical-align: top;
+}
+
+.damage td:first-child {
+  width: 100%;
+}
+
+.dmg-bar {
+  display: block;
+  height: 3px;
+  margin-top: 5px;
+  border-radius: 2px;
+  background: var(--line-faint);
+  overflow: hidden;
+}
+
+.dmg-bar i {
+  display: block;
+  height: 100%;
+  border-radius: 2px;
+  opacity: 0.8;
+}
+
+.damage .empty {
   color: var(--muted);
 }

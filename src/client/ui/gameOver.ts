@@ -16,12 +16,15 @@ export function buildGameOver(s: GameState, p: Player): void {
   ];
   byId('over-summary').innerHTML = items.map(([k, v]) => `<div><div class="v">${v}</div><div class="k">${k}</div></div>`).join('');
   const rows = Object.entries(p.dmgDealt).sort((a, b) => b[1] - a[1]);
+  const top = rows[0]?.[1] ?? 1;
   byId('over-damage').innerHTML = rows
     .map(([src, v]) => {
       const w = WEAPONS[src];
       const inst = p.weapons.find((x) => x.id === src);
+      const color = w?.color ?? 'var(--muted)';
       const name = w ? `<span style="color:${w.color}">${w.icon}</span> ${esc(inst ? weaponName(inst) : w.name)}` : SRC_NAMES[src] ?? src;
-      return `<tr><td>${name}</td><td>${Math.round(v).toLocaleString('en-US')}</td></tr>`;
+      const bar = `<span class="dmg-bar"><i style="width:${Math.max(2, (v / top) * 100)}%;background:${color}"></i></span>`;
+      return `<tr><td>${name}${bar}</td><td>${Math.round(v).toLocaleString('en-US')}</td></tr>`;
     })
-    .join('');
+    .join('') || '<tr><td class="empty">No damage dealt</td><td></td></tr>';
 }

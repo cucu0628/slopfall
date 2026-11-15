@@ -10,7 +10,7 @@ import { clearRun, describeRun, exportName, exportRun, importRun, loadRun, saveR
 import { LOCAL_ID, Session } from './session';
 import { TouchControls } from './touch';
 import { buildCharSelect } from './ui/charSelect';
-import { buildCodex } from './ui/codex';
+import { buildCodex, codexKey } from './ui/codex';
 import { byId, show, type ScreenId } from './ui/dom';
 import { buildGameOver } from './ui/gameOver';
 import { buildLevelUp } from './ui/levelUp';
@@ -207,6 +207,7 @@ export function startApp(): void {
   window.addEventListener('keydown', (e) => {
     if (e.code === 'KeyM') sound.toggleMute();
     if (e.code === 'Escape' && (screen === 'codex' || screen === 'chars')) setScreen('menu');
+    if (screen === 'codex' && codexKey(e.code)) e.preventDefault();
     if (!inGame()) return;
     if (e.code === 'Escape') setPaused(!session!.paused);
     if (screen === 'levelup' && /^Digit[1-4]$/.test(e.code)) input.choose(Number(e.code.slice(5)) - 1);

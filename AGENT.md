@@ -43,6 +43,8 @@ src/
       heroes/             one file per hero figure + shared drawing primitives
     ui/                   HTML overlay screens (dom.ts, charSelect, levelUp, pause, gameOver) and styles/*.css
 tests/                    vitest suites by topic + helpers.ts (deterministic bot, run())
+public/                   copied as-is into dist/: icon.svg (app icon), favicon.svg (simplified for tabs),
+                          PNG renders of them and site.webmanifest. Re-render the PNGs when an SVG changes.
 ```
 
 Data flow: `client` turns input into an `InputCmd` → `step(state, { [playerId]: cmd })` advances the sim → the sim pushes `state.events` (hits, kills, explosions, level-ups...) → `session.ts` turns events into particles, numbers and sounds → `renderer.ts` draws `GameState`.
@@ -96,6 +98,7 @@ When tuning, measure instead of guessing: write a throwaway vitest that builds a
 - Player-facing text is English.
 - Keep files focused; prefer adding a new file under the right folder over growing a big one.
 - Rendering uses procedural vector graphics only (no image assets). Glows use `glow()` from `render/sprites.ts`, not `shadowBlur`.
+- UI styling uses the design tokens in `client/ui/styles/base.css` (`--s-*` spacing, `--fs-*` type sizes, `--r-*` radii, colours, `--shadow-*`) and its primitives (`.panel`, `.panel.accent` with `--c`, `.btn` + `primary`/`success` + `btn-sm`/`btn-lg`, `h2` screen titles, `h3`/`.label` micro labels). Don't add raw sizes or colours in other stylesheets.
 - Mobile matters: test layouts at phone sizes (e.g. 390×844 and 844×390) when touching UI or CSS.
 
 ## Deployment and license

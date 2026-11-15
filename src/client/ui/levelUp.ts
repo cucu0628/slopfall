@@ -54,10 +54,10 @@ export function buildLevelUp(choices: UpgradeOption[], p: Player, onChoose: (i: 
   const box = byId('levelup-cards');
   box.innerHTML = '';
   const evolving = choices[0]?.kind === 'evo';
-  byId('levelup-title').textContent = evolving ? 'CHOOSE AN EVOLUTION' : 'LEVEL UP!';
+  byId('levelup-title').textContent = evolving ? 'Choose an evolution' : 'Level up!';
   choices.forEach((o, i) => {
     const v = optionView(o, p.charId);
-    const card = el('div', `card${v.rarity ? ' rarity-' + v.rarity.toLowerCase() : ''}`);
+    const card = el('div', `card panel accent${v.rarity ? ' rarity-' + v.rarity.toLowerCase() : ''}`);
     card.style.setProperty('--c', v.color);
     card.innerHTML = `
       ${v.rarity ? `<div class="rarity">${v.rarity}</div>` : ''}
@@ -75,7 +75,7 @@ export function buildLevelUp(choices: UpgradeOption[], p: Player, onChoose: (i: 
     const w = WEAPONS[choices[0].id];
     w.evos.forEach((e, i) => {
       if (choices.some((o) => o.level === i)) return;
-      const card = el('div', 'card locked');
+      const card = el('div', 'card panel accent locked');
       card.style.setProperty('--c', '#6b7290');
       card.innerHTML = `
         <div class="icon">🔒</div>

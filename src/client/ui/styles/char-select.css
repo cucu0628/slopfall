@@ -1,10 +1,9 @@
 /* Character select screen. */
 
-/* Character select */
 .char-grid {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 300px));
-  gap: 16px;
+  gap: var(--s-4);
   max-width: 100%;
 }
 
@@ -23,48 +22,53 @@
 .char-card {
   display: flex;
   flex-direction: column;
-  gap: 6px;
-  padding: 14px;
-  border-radius: 14px;
-  background: var(--panel);
-  border: 1px solid var(--line);
+  gap: var(--s-2);
+  padding: var(--s-4);
   cursor: pointer;
-  transition: transform 0.12s, border-color 0.12s, box-shadow 0.12s;
+  transition:
+    transform var(--t-fast) var(--ease),
+    border-color var(--t-fast),
+    box-shadow var(--t-fast);
 }
 
 .char-card:hover {
   transform: translateY(-3px);
-  border-color: var(--c);
-  box-shadow: 0 0 26px color-mix(in srgb, var(--c) 45%, transparent);
+  border-color: color-mix(in srgb, var(--c) 70%, transparent);
+  box-shadow:
+    var(--shadow-1),
+    inset 0 2px 0 var(--c),
+    0 0 26px color-mix(in srgb, var(--c) 40%, transparent);
 }
 
 .char-card .top {
   display: flex;
   align-items: center;
-  gap: 12px;
+  gap: var(--s-3);
 }
 
 .char-card canvas {
-  width: 96px;
-  height: 96px;
+  width: 88px;
+  height: 88px;
   flex: none;
 }
 
 .char-card .name {
-  font-size: 20px;
-  font-weight: 800;
+  font-family: var(--font-display);
+  font-size: var(--fs-xl);
+  font-weight: 700;
   color: var(--c);
 }
 
 .char-card .title {
-  font-size: 12px;
-  color: var(--muted);
-  letter-spacing: 0.1em;
+  font-size: var(--fs-xs);
+  font-weight: 700;
+  letter-spacing: var(--track-label);
   text-transform: uppercase;
+  color: var(--muted);
 }
 
 .char-card .line {
-  font-size: 13px;
+  font-size: var(--fs-sm);
   color: var(--text);
 }
 
@@ -74,11 +78,12 @@
 }
 
 .char-card .ability {
-  margin-top: 4px;
-  padding: 8px 10px;
-  border-radius: 8px;
-  background: rgba(255, 255, 255, 0.05);
-  font-size: 13px;
+  margin-top: var(--s-1);
+  padding: var(--s-2) var(--s-3);
+  border-radius: var(--r-md);
+  background: var(--well);
+  font-size: var(--fs-sm);
+  line-height: 1.45;
 }
 
 .char-card .ability strong {

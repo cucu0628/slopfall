@@ -1,83 +1,53 @@
-/* Main menu: copyright credit, the Continue and Report a bug buttons. */
+/* Main menu: logo, action stack, corner links (bug report, credit). */
 
-/* ---------------------------------------------------------------- credit */
-
-.credit {
-  position: absolute;
-  right: calc(16px + env(safe-area-inset-right));
-  bottom: calc(12px + env(safe-area-inset-bottom));
-  font-size: 13px;
-  letter-spacing: 0.04em;
-  color: var(--muted);
-  text-decoration: none;
-  opacity: 0.85;
-}
-
-.credit:hover {
-  color: var(--text);
-  opacity: 1;
-}
-
-/* ---------------------------------------------------------------- continue */
-
-.btn.hidden {
-  display: none;
-}
-
-.btn.continue {
+.menu-box {
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 4px;
-  background: linear-gradient(180deg, #34c38f, #1f8f68);
-  border-color: #7df0c4;
-  box-shadow: 0 0 24px rgba(52, 195, 143, 0.45);
+  gap: var(--s-6);
 }
 
-.btn.continue.hidden {
-  display: none;
+/* one column of equal-width actions: Continue / New run, then the
+   secondary row (Codex, Export, Import) spanning the same width */
+.menu-actions {
+  display: flex;
+  flex-direction: column;
+  gap: var(--s-3);
+  width: min(340px, 100%);
 }
 
-.btn.continue:hover {
-  box-shadow: 0 0 36px rgba(52, 195, 143, 0.75);
+.menu-actions > .btn {
+  width: 100%;
+}
+
+.menu-secondary {
+  display: flex;
+  gap: var(--s-2);
+}
+
+.menu-secondary .btn {
+  flex: 1 1 0;
+  min-width: 0;
+  padding: 0 var(--s-2);
+}
+
+.btn.continue {
+  flex-direction: column;
+  gap: 2px;
+  min-height: 64px;
 }
 
 #continue-info {
-  font-size: 12px;
+  font-size: var(--fs-xs);
   font-weight: 600;
   letter-spacing: 0.04em;
+  text-transform: none;
   opacity: 0.9;
 }
 
-/* ---------------------------------------------------------------- bug report */
-
-.btn.bug-report {
-  font-size: 13px;
-  padding: 8px 18px;
-  color: var(--muted);
-  text-decoration: none;
-}
-
-.btn.bug-report:hover {
-  color: var(--text);
-}
-
-/* ---------------------------------------------------------------- codex, save export / import */
-
-.menu-row {
-  margin-top: -10px;
-  gap: 10px;
-}
-
-.btn.small {
-  font-size: 14px;
-  padding: 8px 18px;
-}
-
 .save-msg {
-  margin: -14px 0 0;
-  max-width: min(420px, 100%);
-  font-size: 13px;
+  margin: 0;
+  font-size: var(--fs-sm);
   text-align: center;
   color: #7df0c4;
 }
@@ -90,17 +60,39 @@
   display: none;
 }
 
-@media (max-width: 620px), (max-height: 520px) {
-  .menu-row {
-    margin-top: -6px;
-  }
+/* ---------------------------------------------------------------- corner links */
 
-  .btn.small {
-    font-size: 13px;
-    padding: 7px 14px;
-  }
+.corner-link {
+  position: absolute;
+  bottom: calc(var(--s-3) + env(safe-area-inset-bottom));
+  font-size: var(--fs-sm);
+  letter-spacing: 0.04em;
+  color: var(--muted);
+  text-decoration: none;
+  opacity: 0.85;
+  transition: color var(--t-fast), opacity var(--t-fast);
+}
 
-  .save-msg {
-    margin-top: -8px;
+.corner-link:hover {
+  color: var(--text);
+  opacity: 1;
+}
+
+.bug-report {
+  left: calc(var(--s-4) + env(safe-area-inset-left));
+}
+
+.bug-report::before {
+  content: '⚑ ';
+}
+
+.credit {
+  right: calc(var(--s-4) + env(safe-area-inset-right));
+}
+
+/* portrait phones: the two links share the bottom line, so keep them short */
+@media (max-width: 620px) {
+  .corner-link {
+    font-size: var(--fs-xs);
   }
 }
