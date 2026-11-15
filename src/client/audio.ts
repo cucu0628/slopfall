@@ -1,6 +1,6 @@
 // Tiny procedural sound effects with WebAudio. No audio files needed.
 
-const MIN_GAP: Record<string, number> = { hit: 0.035, kill: 0.04, gem: 0.03, swing: 0.06, bolt: 0.06, arrow: 0.05, zap: 0.08, frost: 0.1, hurt: 0.15 };
+const MIN_GAP: Record<string, number> = { coin: 0.06, hit: 0.035, kill: 0.04, gem: 0.03, swing: 0.06, bolt: 0.06, arrow: 0.05, zap: 0.08, frost: 0.1, hurt: 0.15 };
 
 export class Sound {
   private ctx: AudioContext | null = null;
@@ -83,6 +83,7 @@ export class Sound {
       case 'select': this.tone(660, 0.08, 'triangle', 0.1, 990); break;
       case 'chest': [392, 523, 659, 784, 1047, 1319].forEach((f, i) => this.tone(f, 0.25, 'triangle', 0.1, 0, i * 0.06)); break;
       case 'pickup': this.tone(700, 0.12, 'triangle', 0.12, 1400); break;
+      case 'coin': this.tone(1568, 0.07, 'square', 0.04); this.tone(2093, 0.12, 'square', 0.04, 0, 0.06); break;
       case 'explode': this.noise(0.5, 0.35, 400); this.tone(90, 0.4, 'sine', 0.25, 30); break;
       case 'warn': this.tone(880, 0.12, 'square', 0.08); this.tone(660, 0.16, 'square', 0.08, 0, 0.14); break;
       case 'dash': this.noise(0.18, 0.18, 2200, 'bandpass'); this.tone(500, 0.15, 'sine', 0.05, 220); break;

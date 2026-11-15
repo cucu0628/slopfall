@@ -1,4 +1,5 @@
 import { hurtPlayer } from '../combat';
+import { COIN_FUSE } from './bosses/goldfang';
 import type { GameState } from '../types';
 
 function distToSegment(px: number, py: number, x1: number, y1: number, x2: number, y2: number): number {
@@ -44,6 +45,21 @@ export function updateHazards(s: GameState, dt: number): void {
       h.x = src.x;
       h.y = src.y;
     }
+    if (h.kind === 'coin' && h.speed === 0) {
+      // Goldfang's fake coin: the fuse is lit when a player steps close, otherwise it fizzles out
+      for (const p of s.players) {
+        if (!p.dead && Math.hypot(p.x - h.x, p.y - h.y) < 46 + p.radius) {
+          h.speed = 1;
+          h.warn = h.maxWarn = COIN_FUSE;
+          s.events.push({ t: 'sfx', name: 'warn' });
+          break;
+        }
+      }
+      if (h.speed === 0 && h.warn <= dt) {
+        h.dead = true;
+        continue;
+      }
+    }
     if (h.warn > 0) {
       h.warn -= dt;
       continue;
@@ -71,11 +87,13 @@ export function updateHazards(s: GameState, dt: number): void {
         break;
       }
       case 'slam':
-      case 'skyfall': {
+      case 'skyfall':
+      case 'coin': {
         if (h.fired) break;
         h.fired = true;
-        s.events.push({ t: 'explode', x: h.x, y: h.y, r: h.r, color: h.kind === 'skyfall' ? '#ff7a1a' : '#ff4d4d' });
-        s.events.push({ t: 'shake', v: 10 });
+        const color = h.kind === 'skyfall' ? '#ff7a1a' : h.kind === 'coin' ? '#ffc83d' : '#ff4d4d';
+        s.events.push({ t: 'explode', x: h.x, y: h.y, r: h.r, color });
+        s.events.push({ t: 'shake', v: h.kind === 'coin' ? 6 : 10 });
         for (const p of s.players) {
           if (p.dead) continue;
           if (Math.hypot(p.x - h.x, p.y - h.y) < h.r + p.radius) hurtPlayer(s, p, h.dmg);

@@ -99,4 +99,10 @@ export const CODEX_ENTRIES: Record<string, CodexEntry> = {
     traits: ['Bullet hell', 'Laser'],
     tip: 'Move with the laser\'s sweep, not against it, and weave between the spirals.',
   },
+  // Secret boss (Secrets chapter)
+  goldfang: {
+    text: 'A greedy goblin merchant who rarely replaces a boss. He never attacks, keeps just out of reach and escapes with his treasure after 25 seconds. Every third coin he drops is a fake that explodes. Catch him and his sack holds a unique weapon or perk.',
+    traits: ['Secret', 'Fleeing', 'Unique loot'],
+    tip: 'Chase him with ranged weapons and dashes. Coins that do not fly to you are fakes.',
+  },
 };

@@ -32,6 +32,8 @@ export interface Stats {
   lifestealCap: number; // max lifesteal healing per second, as a fraction of max HP
   dr: number; // damage reduction fraction (armor perk)
   burn: number; // chance to ignite on hit
+  gemDouble: number; // chance for a collected XP pickup to count twice
+  maxHpMul: number; // applied after every flat max HP bonus
 }
 
 export interface WeaponInst {
@@ -214,7 +216,7 @@ export interface EnemyProjectile {
   dead: boolean;
 }
 
-export type HazardKind = 'ring' | 'slam' | 'laser' | 'skyfall';
+export type HazardKind = 'ring' | 'slam' | 'laser' | 'skyfall' | 'coin';
 
 export interface Hazard {
   id: number;
@@ -262,7 +264,7 @@ export interface Minion {
   dead: boolean;
 }
 
-export type PickupKind = 'xp' | 'heal' | 'magnet' | 'bomb' | 'chest';
+export type PickupKind = 'xp' | 'heal' | 'magnet' | 'bomb' | 'chest' | 'coin' | 'relic';
 
 export interface Pickup {
   id: number;
@@ -292,6 +294,12 @@ export interface WaveState {
   eliteSpawned: boolean;
 }
 
+/** The secret boss of a run, rolled once from the seed when the run starts. */
+export interface SecretState {
+  wave: number; // boss wave where Goldfang shows up instead of the regular boss (0 = never)
+  reward: 'weapon' | 'perk';
+}
+
 export type SimEvent =
   | { t: 'hit'; x: number; y: number; v: number; crit: boolean; dot: boolean }
   | { t: 'kill'; x: number; y: number; type: string; elite: boolean; boss: boolean; r: number }
@@ -301,7 +309,9 @@ export type SimEvent =
   | { t: 'vigor'; pid: PlayerId; v: number }
   | { t: 'levelup'; pid: PlayerId }
   | { t: 'wave'; n: number; boss: boolean }
-  | { t: 'boss'; name: string }
+  | { t: 'boss'; id: string; name: string }
+  | { t: 'escape'; x: number; y: number; name: string }
+  | { t: 'unique'; pid: PlayerId; name: string; desc: string }
   | { t: 'explode'; x: number; y: number; r: number; color: string }
   | { t: 'pickup'; pid: PlayerId; kind: PickupKind }
   | { t: 'chest'; pid: PlayerId; items: string[] }
@@ -336,6 +346,7 @@ export interface GameState {
   pickups: Pickup[];
   corpses: Corpse[];
   wave: WaveState;
+  secret: SecretState;
   events: SimEvent[];
   kills: number;
   gameOver: boolean;

@@ -64,7 +64,9 @@ export function drawHud(ctx: Ctx, r: Renderer, s: GameState, me: Player, fx: Eff
   // Wave and time
   const w = s.wave;
   text(ctx, w.bossWave ? `WAVE ${w.n} · BOSS` : `WAVE ${w.n}`, W / 2, 38, 22, w.bossWave ? '#ff5d7a' : '#ffffff', 'center');
-  text(ctx, w.bossWave ? 'Defeat the boss!' : `next wave in ${Math.ceil(w.timer)}s`, W / 2, 56, 12, '#aab4d4', 'center', 'normal');
+  const secret = w.bossWave && s.enemies.some((e) => e.type === 'goldfang');
+  const sub = secret ? 'Catch him before he escapes!' : w.bossWave ? 'Defeat the boss!' : `next wave in ${Math.ceil(w.timer)}s`;
+  text(ctx, sub, W / 2, 56, 12, secret ? '#ffc83d' : '#aab4d4', 'center', 'normal');
   text(ctx, fmtTime(s.time), W - 10, 52, 15, '#ffffff', 'right');
   text(ctx, `☠ ${s.kills}`, W - 10, 72, 14, '#ffb3b3', 'right');
   const mm = Math.round(Math.min(160, W * 0.18));
@@ -74,6 +76,12 @@ export function drawHud(ctx: Ctx, r: Renderer, s: GameState, me: Player, fx: Eff
   const bosses = s.enemies.filter((e) => e.boss);
   bosses.forEach((b, i) => {
     const bw = Math.min(520, W * 0.6), bx = (W - bw) / 2, by = 80 + i * 34;
+    if (b.type === 'goldfang') {
+      // the secret boss runs on a clock: b.t is his escape timer
+      text(ctx, `${ENEMIES[b.type].name.toUpperCase()} · ESCAPES IN ${Math.ceil(Math.max(0, b.t))}s`, W / 2, by - 2, 13, '#ffe08a', 'center');
+      bar(ctx, bx, by + 3, bw, 12, b.hp / b.maxHp, '#ffc83d');
+      return;
+    }
     text(ctx, ENEMIES[b.type].name.toUpperCase(), W / 2, by - 2, 13, '#ffd0dc', 'center');
     bar(ctx, bx, by + 3, bw, 12, b.hp / b.maxHp, b.hp < b.maxHp * 0.5 ? '#ff2e5a' : '#d63a7a');
   });
@@ -214,7 +222,7 @@ function drawAbility(ctx: Ctx, me: Player, W: number, H: number): void {
 function drawIndicators(ctx: Ctx, r: Renderer, s: GameState, me: Player): void {
   const targets: { x: number; y: number; color: string }[] = [];
   for (const e of s.enemies) if (e.boss) targets.push({ x: e.x, y: e.y, color: '#ff2e88' });
-  for (const p of s.pickups) if (p.kind === 'chest') targets.push({ x: p.x, y: p.y, color: '#ffd166' });
+  for (const p of s.pickups) if (p.kind === 'chest' || p.kind === 'relic') targets.push({ x: p.x, y: p.y, color: '#ffd166' });
   for (const t of targets) {
     const [sx, sy] = r.screenOf(t.x, t.y);
     if (sx > 0 && sx < r.w && sy > 0 && sy < r.h) continue;

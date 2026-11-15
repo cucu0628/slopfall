@@ -6,6 +6,7 @@ import { updateIdle } from './systems/idle';
 import { updateEnemyProjectiles, updateHazards } from './systems/hazards';
 import { chooseUpgrade, createPlayer, updateLeveling } from './systems/leveling';
 import { updatePickups } from './systems/pickups';
+import { rollSecret } from './systems/secret';
 import { startWave, updateWaves } from './systems/waves';
 import { updateMinions, updateProjectiles, updateTurrets, updateWeapons, updateZones } from './systems/weapons';
 import { DT, emptyInput, type GameState, type InputCmd, type Player, type SimConfig } from './types';
@@ -34,6 +35,7 @@ export function createGame(seed: number, setups: PlayerSetup[], cfg: Partial<Sim
     pickups: [],
     corpses: [],
     wave: { n: 0, timer: 0, spawnAcc: 8, bossWave: false, eliteSpawned: false },
+    secret: rollSecret(seed),
     events: [],
     kills: 0,
     gameOver: false,

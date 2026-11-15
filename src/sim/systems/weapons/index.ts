@@ -8,6 +8,7 @@ import { fireArrow } from './arrow';
 import { updateAura } from './aura';
 import { fireAxe } from './axe';
 import { fireBolt } from './bolt';
+import { fireCoins } from './coins';
 import { fireFrost } from './frost';
 import { fireLightning } from './lightning';
 import { fireNova } from './nova';
@@ -29,6 +30,7 @@ const WEAPON_UPDATES: Record<string, WeaponUpdate> = {
   nova: fireNova,
   turret: deployTurret,
   frost: fireFrost,
+  coins: fireCoins,
 };
 
 export function updateWeapons(s: GameState, p: Player, dt: number): void {

@@ -35,6 +35,8 @@ const defs: EnemyDef[] = [
   { id: 'broodmother', name: 'Brood Mother', hp: 3400, speed: 85, dmg: 22, radius: 44, xp: 130, color: '#8b2f5a', cost: 0, unlock: 0, group: [1, 1], boss: true },
   { id: 'wyrm', name: 'Frost Wyrm', hp: 4300, speed: 135, dmg: 26, radius: 34, xp: 150, color: '#7fd4ff', cost: 0, unlock: 0, group: [1, 1], boss: true },
   { id: 'voideye', name: 'Void Eye', hp: 4000, speed: 45, dmg: 22, radius: 40, xp: 160, color: '#ff2e88', cost: 0, unlock: 0, group: [1, 1], boss: true },
+  // Secret boss: never in BOSS_ORDER, see systems/secret.ts. No contact damage, it only runs.
+  { id: 'goldfang', name: 'Goldfang the Greedy', hp: 1000, speed: 120, dmg: 0, radius: 30, xp: 200, color: '#ffc83d', cost: 0, unlock: 0, group: [1, 1], boss: true },
 ];
 
 export const ENEMIES: Record<string, EnemyDef> = Object.fromEntries(defs.map((d) => [d.id, d]));

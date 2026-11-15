@@ -2,6 +2,7 @@
 
 import type { Projectile } from '../../../sim/types';
 import { rgba } from '../sprites';
+import { drawCoin } from './pickups';
 import { Ctx, TAU, circle } from './shared';
 
 // ---------------------------------------------------------------- player stuff
@@ -21,6 +22,7 @@ export function projectileColor(kind: string): string {
     case 'bullet': return '#7dffcf';
     case 'shard': return '#9ad8ff';
     case 'shard2': return '#e0f6ff';
+    case 'coin': return '#ffc83d';
     default: return '#ffffff';
   }
 }
@@ -29,6 +31,9 @@ export function drawProjectile(ctx: Ctx, p: Projectile, x: number, y: number): v
   const col = projectileColor(p.kind);
   const r = p.radius;
   switch (p.kind) {
+    case 'coin':
+      drawCoin(ctx, x, y, r, p.age * 2);
+      break;
     case 'bolt':
     case 'bolt2':
     case 'bullet': {

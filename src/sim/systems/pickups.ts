@@ -1,6 +1,8 @@
 import { damageEnemy, healPlayer, killEnemy } from '../combat';
 import type { GameState, Pickup, Player } from '../types';
+import { rand } from '../rng';
 import { addXp, openChest } from './leveling';
+import { grantSecretReward } from './secret';
 
 const MAX_GEMS = 400;
 
@@ -9,7 +11,11 @@ function collect(s: GameState, pk: Pickup, p: Player): void {
   s.events.push({ t: 'pickup', pid: p.id, kind: pk.kind });
   switch (pk.kind) {
     case 'xp':
-      addXp(s, p, pk.value);
+    case 'coin':
+      addXp(s, p, p.stats.gemDouble > 0 && rand(s) < p.stats.gemDouble ? pk.value * 2 : pk.value);
+      break;
+    case 'relic':
+      grantSecretReward(s, p);
       break;
     case 'heal':
       healPlayer(s, p, 35);
@@ -57,10 +63,11 @@ export function updatePickups(s: GameState, dt: number): void {
     }
     for (const p of s.players) {
       if (p.dead) continue;
-      const range = pk.kind === 'xp' ? p.stats.magnet : p.radius + 24;
+      const gem = pk.kind === 'xp' || pk.kind === 'coin';
+      const range = gem ? p.stats.magnet : p.radius + 24;
       if ((p.x - pk.x) ** 2 + (p.y - pk.y) ** 2 < range * range) {
         pk.target = p.id;
-        pk.sp = pk.kind === 'xp' ? -180 : 250;
+        pk.sp = gem ? -180 : 250;
         break;
       }
     }

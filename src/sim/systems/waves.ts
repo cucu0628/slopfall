@@ -45,13 +45,14 @@ export function startWave(s: GameState, n: number): void {
   const k = n / BOSS_EVERY - 1;
   const ids = [BOSS_ORDER[k % BOSS_ORDER.length]];
   if (n >= 20) ids.push(BOSS_ORDER[(k + 1) % BOSS_ORDER.length]);
+  if (n === s.secret.wave) ids.splice(0, ids.length, 'goldfang'); // the secret boss comes alone
   const sc = waveScale(n);
   const hpMul = sc.hp * bossHpFactor(n) * (ids.length > 1 ? 0.75 : 1) * alive.length;
   for (const id of ids) {
     const [x, y] = spawnPoint(s, pick(s, alive), 600);
     const e = spawnEnemy(s, id, x, y, { hp: hpMul, dmg: sc.dmg, speed: 1 });
     initBoss(e);
-    s.events.push({ t: 'boss', name: ENEMIES[id].name });
+    s.events.push({ t: 'boss', id, name: ENEMIES[id].name });
   }
 }
 

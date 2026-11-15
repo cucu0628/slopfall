@@ -139,7 +139,8 @@ export function killEnemy(s: GameState, e: Enemy, owner: Player | null): void {
 
   addPickup(s, 'xp', e.x, e.y, e.xp);
   if (e.boss) {
-    addPickup(s, 'chest', e.x, e.y, 0, true);
+    // the secret boss drops his treasure (unique weapon or perk) instead of a chest
+    addPickup(s, e.type === 'goldfang' ? 'relic' : 'chest', e.x, e.y, 0, true);
     addPickup(s, 'heal', e.x + 30, e.y, 0);
   } else if (e.chest) {
     addPickup(s, 'chest', e.x, e.y, 0);

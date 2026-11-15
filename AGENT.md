@@ -78,6 +78,8 @@ The simulation must stay **deterministic** and **serializable** – this is what
 
 **New boss** – data row with `boss: true`, a behaviour file in `systems/bosses/` registered in its `index.ts` (`init` timers + `update`), add the id to `BOSS_ORDER`, artwork in `render/entities/bosses.ts`, Codex description in `client/ui/codexEntries.ts`.
 
+**Secret boss** – Goldfang the Greedy (`systems/secret.ts`, `systems/bosses/goldfang.ts`). `rollSecret(seed)` decides once per run, from the seed, on which boss wave (if any) he replaces the lineup and whether his treasure (`relic` pickup) is the unique weapon `coins` or the unique perk `goldpurse`. Unique items (`unique: true`) are left out of `WEAPON_IDS` / `PERK_IDS`, never offered as new and take no slot (`slottedWeapons` / `slottedPerks`).
+
 **New hero** – entry in `content/characters.ts` (stats, starting weapon, passive mods, ability), ability logic in `systems/abilities.ts`, figure in `render/heroes/<name>.ts` registered in `render/heroes/index.ts`.
 
 **Sounds** – add a case to `Sound.play` in `client/audio.ts` and emit `{ t: 'sfx', name }` from the sim.

@@ -1,6 +1,6 @@
 import { ABILITY_MAX_LEVEL, CHARACTERS } from '../content/characters';
-import { BONUSES, BONUS_IDS, PERKS, PERK_IDS, RARITIES } from '../content/perks';
-import { MAX_WEAPON_LEVEL, WEAPONS, WEAPON_IDS } from '../content/weapons';
+import { BONUSES, BONUS_IDS, PERKS, PERK_IDS, RARITIES, slottedPerks } from '../content/perks';
+import { MAX_WEAPON_LEVEL, UNIQUE_WEAPON_IDS, WEAPONS, WEAPON_IDS, slottedWeapons } from '../content/weapons';
 import { healPlayer } from '../combat';
 import { rand, weightedPick } from '../rng';
 import type { GameState, Player, Stats, UpgradeOption, WeaponInst } from '../types';
@@ -15,12 +15,13 @@ export function computeStats(p: Player): Stats {
   const c = CHARACTERS[p.charId];
   const s: Stats = {
     might: 1, cooldown: 1, speed: c.speed, maxHp: c.hp, regen: 0, armor: 0, magnet: 75,
-    area: 1, duration: 1, amount: 0, crit: 0.05, growth: 1, lifesteal: 0, lifestealCap: 0, dr: 0, burn: 0,
+    area: 1, duration: 1, amount: 0, crit: 0.05, growth: 1, lifesteal: 0, lifestealCap: 0, dr: 0, burn: 0, gemDouble: 0, maxHpMul: 1,
   };
   s.maxHp += p.vigorHp;
   for (const k of Object.keys(c.mods) as (keyof Stats)[]) s[k] += c.mods[k] ?? 0;
   for (const perk of p.perks) PERKS[perk.id].apply(s, perk.power);
   for (const id in p.bonus) BONUSES[id].apply(s, p.bonus[id]);
+  s.maxHp *= s.maxHpMul;
   s.dr = Math.min(0.6, s.dr);
   s.burn = Math.min(1, s.burn);
   return s;
@@ -65,11 +66,13 @@ export function addXp(s: GameState, p: Player, amount: number): void {
 
 function upgradePool(p: Player): UpgradeOption[] {
   const pool: UpgradeOption[] = [];
-  for (const id of WEAPON_IDS) {
+  const weaponSlots = slottedWeapons(p.weapons), perkSlots = slottedPerks(p.perks);
+  // unique weapons (secret boss reward) level up like the others once owned
+  for (const id of [...WEAPON_IDS, ...UNIQUE_WEAPON_IDS]) {
     const w = p.weapons.find((x) => x.id === id);
     if (w) {
       if (w.level < MAX_WEAPON_LEVEL) pool.push({ kind: 'weapon', id, level: w.level + 1 });
-    } else if (p.weapons.length < MAX_SLOTS) {
+    } else if (weaponSlots < MAX_SLOTS && !WEAPONS[id].unique) {
       pool.push({ kind: 'weapon', id, level: 1 });
     }
   }
@@ -77,7 +80,7 @@ function upgradePool(p: Player): UpgradeOption[] {
     const k = p.perks.find((x) => x.id === id);
     if (k) {
       if (k.level < PERKS[id].max) pool.push({ kind: 'perk', id, level: k.level + 1, rarity: 0 });
-    } else if (p.perks.length < MAX_SLOTS) {
+    } else if (perkSlots < MAX_SLOTS) {
       pool.push({ kind: 'perk', id, level: 1, rarity: 0 });
     }
   }

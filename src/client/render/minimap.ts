@@ -87,10 +87,10 @@ export class Minimap {
 
     // pickups that matter
     for (const p of s.pickups) {
-      if (p.kind === 'xp') continue;
+      if (p.kind === 'xp' || p.kind === 'coin') continue;
       const [px, py] = map(p.x, p.y);
-      ctx.fillStyle = p.kind === 'chest' ? '#ffd166' : p.kind === 'heal' ? '#ff4d6d' : p.kind === 'magnet' ? '#5d9bff' : '#ffb347';
-      const r = p.kind === 'chest' ? 3.5 : 2.5;
+      ctx.fillStyle = p.kind === 'chest' || p.kind === 'relic' ? '#ffd166' : p.kind === 'heal' ? '#ff4d6d' : p.kind === 'magnet' ? '#5d9bff' : '#ffb347';
+      const r = p.kind === 'chest' || p.kind === 'relic' ? 3.5 : 2.5;
       ctx.fillRect(px - r, py - r, r * 2, r * 2);
     }
 
