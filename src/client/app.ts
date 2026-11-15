@@ -6,10 +6,11 @@ import type { GameState, UpgradeOption } from '../sim/types';
 import { Sound } from './audio';
 import { Input } from './input';
 import { Renderer } from './render/renderer';
-import { clearRun, describeRun, loadRun, saveRun } from './runStorage';
+import { clearRun, describeRun, exportName, exportRun, importRun, loadRun, saveRun } from './runStorage';
 import { LOCAL_ID, Session } from './session';
 import { TouchControls } from './touch';
 import { buildCharSelect } from './ui/charSelect';
+import { buildCodex } from './ui/codex';
 import { byId, show, type ScreenId } from './ui/dom';
 import { buildGameOver } from './ui/gameOver';
 import { buildLevelUp } from './ui/levelUp';
@@ -43,6 +44,7 @@ export function startApp(): void {
   function setScreen(id: ScreenId | null): void {
     screen = id;
     show(id);
+    if (id !== 'menu') byId('save-msg').classList.add('hidden');
     touch.setVisible(id === null);
   }
 
@@ -52,11 +54,46 @@ export function startApp(): void {
     if (saveRun(s)) lastSave = s.time;
   }
 
-  /** Shows the Continue button when a resumable run exists. */
+  /** Shows the Continue and Export buttons when a resumable run exists. */
   function refreshContinue(): void {
     const saved = loadRun();
     byId('btn-continue').classList.toggle('hidden', !saved);
+    byId('btn-export').classList.toggle('hidden', !saved);
     if (saved) byId('continue-info').textContent = describeRun(saved);
+  }
+
+  function saveMessage(text: string, error = false): void {
+    const m = byId('save-msg');
+    m.textContent = text;
+    m.classList.toggle('error', error);
+    m.classList.remove('hidden');
+  }
+
+  function exportSave(): void {
+    const raw = exportRun();
+    const saved = raw ? loadRun() : null;
+    if (!raw || !saved) {
+      refreshContinue();
+      return saveMessage('No saved run to export.', true);
+    }
+    const url = URL.createObjectURL(new Blob([raw], { type: 'application/json' }));
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = exportName(saved);
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    setTimeout(() => URL.revokeObjectURL(url), 1000);
+    saveMessage(`Exported ${a.download}`);
+  }
+
+  async function importSave(file: File): Promise<void> {
+    if (loadRun() && !confirm('Importing replaces your current saved run. Continue?')) return;
+    const text = file.size < 5_000_000 ? await file.text().catch(() => '') : '';
+    const run = importRun(text);
+    refreshContinue();
+    if (run) saveMessage(`Imported: ${describeRun(run)}`);
+    else saveMessage('That file is not a valid Nightfall save (or it is from an older version).', true);
   }
 
   function runDemo(): void {
@@ -131,7 +168,7 @@ export function startApp(): void {
     runDemo();
   }
 
-  const inGame = () => session !== null && screen !== 'menu' && screen !== 'chars';
+  const inGame = () => session !== null && screen !== 'menu' && screen !== 'chars' && screen !== 'codex';
 
   buildCharSelect(startGame);
   byId('btn-play').addEventListener('click', () => {
@@ -144,6 +181,20 @@ export function startApp(): void {
     else refreshContinue();
   });
   byId('btn-back').addEventListener('click', () => setScreen('menu'));
+  byId('btn-codex').addEventListener('click', () => {
+    buildCodex();
+    setScreen('codex');
+    byId('screen-codex').scrollTop = 0;
+  });
+  byId('btn-codex-back').addEventListener('click', () => setScreen('menu'));
+  byId('btn-export').addEventListener('click', exportSave);
+  const fileInput = byId<HTMLInputElement>('import-file');
+  byId('btn-import').addEventListener('click', () => fileInput.click());
+  fileInput.addEventListener('change', () => {
+    const f = fileInput.files?.[0];
+    fileInput.value = ''; // picking the same file again still fires change
+    if (f) void importSave(f);
+  });
   byId('btn-resume').addEventListener('click', () => setPaused(false));
   byId('btn-quit').addEventListener('click', toMenu);
   byId('btn-retry').addEventListener('click', () => startGame(lastChar));
@@ -155,6 +206,7 @@ export function startApp(): void {
 
   window.addEventListener('keydown', (e) => {
     if (e.code === 'KeyM') sound.toggleMute();
+    if (e.code === 'Escape' && (screen === 'codex' || screen === 'chars')) setScreen('menu');
     if (!inGame()) return;
     if (e.code === 'Escape') setPaused(!session!.paused);
     if (screen === 'levelup' && /^Digit[1-4]$/.test(e.code)) input.choose(Number(e.code.slice(5)) - 1);

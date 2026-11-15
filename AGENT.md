@@ -72,9 +72,9 @@ The simulation must stay **deterministic** and **serializable** – this is what
 
 **New perk** – add a `PerkDef` to `content/perks.ts`. `apply(stats, power)` receives the rarity-weighted sum of level-ups; if you need a new stat add it to `Stats` (types.ts) and its default in `computeStats` (systems/leveling.ts). Set `rarity: false` for integer effects.
 
-**New enemy** – data row in `content/enemies.ts` (`unlock` wave, spawn `cost`, `group` size), behaviour case in `updateRegular` (systems/enemies.ts) if it is not a plain chaser, artwork case in `render/entities/enemies.ts`.
+**New enemy** – data row in `content/enemies.ts` (`unlock` wave, spawn `cost`, `group` size), behaviour case in `updateRegular` (systems/enemies.ts) if it is not a plain chaser, artwork case in `render/entities/enemies.ts`, and a Codex description in `client/ui/codexEntries.ts` (a test checks every enemy has one).
 
-**New boss** – data row with `boss: true`, a behaviour file in `systems/bosses/` registered in its `index.ts` (`init` timers + `update`), add the id to `BOSS_ORDER`, artwork in `render/entities/bosses.ts`.
+**New boss** – data row with `boss: true`, a behaviour file in `systems/bosses/` registered in its `index.ts` (`init` timers + `update`), add the id to `BOSS_ORDER`, artwork in `render/entities/bosses.ts`, Codex description in `client/ui/codexEntries.ts`.
 
 **New hero** – entry in `content/characters.ts` (stats, starting weapon, passive mods, ability), ability logic in `systems/abilities.ts`, figure in `render/heroes/<name>.ts` registered in `render/heroes/index.ts`.
 

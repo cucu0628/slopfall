@@ -4,9 +4,16 @@ import { spawnEnemy } from '../entities';
 import { pick, rand, randInt, randRange, weightedPick } from '../rng';
 import type { GameState, Player } from '../types';
 import { initBoss } from './bosses';
+import { refreshStats } from './leveling';
 
 export const ENEMY_CAP = 500;
 export const BOSS_EVERY = 5;
+/** Every this many cleared waves each hero gains VIGOR_HP max HP, so late waves don't one-shot builds without HP perks. */
+export const VIGOR_EVERY = 5;
+export const VIGOR_HP = 5;
+
+/** Max HP a hero has earned from waves by the time wave `n` starts. */
+export const vigorHpAt = (n: number) => Math.floor((n - 1) / VIGOR_EVERY) * VIGOR_HP;
 
 function spawnPoint(s: GameState, target: Player, dist: number): [number, number] {
   const a = rand(s) * Math.PI * 2;
@@ -30,6 +37,7 @@ export function startWave(s: GameState, n: number): void {
   w.bossWave = n % BOSS_EVERY === 0;
   w.eliteSpawned = false;
   s.events.push({ t: 'wave', n, boss: w.bossWave });
+  grantVigor(s, n);
   if (!w.bossWave) return;
 
   const alive = s.players.filter((p) => !p.dead);
@@ -44,6 +52,17 @@ export function startWave(s: GameState, n: number): void {
     const e = spawnEnemy(s, id, x, y, { hp: hpMul, dmg: sc.dmg, speed: 1 });
     initBoss(e);
     s.events.push({ t: 'boss', name: ENEMIES[id].name });
+  }
+}
+
+function grantVigor(s: GameState, n: number): void {
+  const want = vigorHpAt(n);
+  for (const p of s.players) {
+    if (p.dead || p.vigorHp >= want) continue;
+    const gain = want - p.vigorHp;
+    p.vigorHp = want;
+    refreshStats(p); // raises current HP by the same amount
+    s.events.push({ t: 'vigor', pid: p.id, v: gain });
   }
 }
 

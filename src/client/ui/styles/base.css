@@ -81,7 +81,8 @@ body {
 }
 
 #screen-menu,
-#screen-chars {
+#screen-chars,
+#screen-codex {
   background: radial-gradient(ellipse at center, rgba(11, 13, 23, 0.55), rgba(11, 13, 23, 0.92));
 }
 

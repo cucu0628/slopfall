@@ -61,3 +61,46 @@
 .btn.bug-report:hover {
   color: var(--text);
 }
+
+/* ---------------------------------------------------------------- codex, save export / import */
+
+.menu-row {
+  margin-top: -10px;
+  gap: 10px;
+}
+
+.btn.small {
+  font-size: 14px;
+  padding: 8px 18px;
+}
+
+.save-msg {
+  margin: -14px 0 0;
+  max-width: min(420px, 100%);
+  font-size: 13px;
+  text-align: center;
+  color: #7df0c4;
+}
+
+.save-msg.error {
+  color: var(--red);
+}
+
+.save-msg.hidden {
+  display: none;
+}
+
+@media (max-width: 620px), (max-height: 520px) {
+  .menu-row {
+    margin-top: -6px;
+  }
+
+  .btn.small {
+    font-size: 13px;
+    padding: 7px 14px;
+  }
+
+  .save-msg {
+    margin-top: -8px;
+  }
+}

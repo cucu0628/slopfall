@@ -17,6 +17,7 @@ export function computeStats(p: Player): Stats {
     might: 1, cooldown: 1, speed: c.speed, maxHp: c.hp, regen: 0, armor: 0, magnet: 75,
     area: 1, duration: 1, amount: 0, crit: 0.05, growth: 1, lifesteal: 0, lifestealCap: 0, dr: 0, burn: 0,
   };
+  s.maxHp += p.vigorHp;
   for (const k of Object.keys(c.mods) as (keyof Stats)[]) s[k] += c.mods[k] ?? 0;
   for (const perk of p.perks) PERKS[perk.id].apply(s, perk.power);
   for (const id in p.bonus) BONUSES[id].apply(s, p.bonus[id]);
@@ -41,7 +42,7 @@ export function createPlayer(id: string, charId: string, x: number, y: number): 
     weapons: [{ id: c.weapon, level: 1, evolved: false, evo: '', cd: 0.5, t: 0, r: 0 }],
     perks: [],
     abilityLevel: 1, abilityCd: 0, abilityMaxCd: c.ability.cd, abilityT: 0,
-    invuln: 0, hurtT: 0, dashT: 0, dashX: 0, dashY: 0, dashCd: 0, dashMaxCd: 0, bonus: {},
+    invuln: 0, hurtT: 0, dashT: 0, dashX: 0, dashY: 0, dashCd: 0, dashMaxCd: 0, bonus: {}, vigorHp: 0,
     healBudget: 0, lsBudget: 0, idleT: 0, anchorX: x, anchorY: y, skyfallCd: 0, skyfallN: 0, slowT: 0, evoQueue: [],
     pendingLevels: 0, choices: null, dead: false, kills: 0, dmgDealt: {},
   };

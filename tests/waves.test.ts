@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { damageEnemy, waveScale } from '../src/sim/combat';
 import { spawnEnemy } from '../src/sim/entities';
 import { BOSS_HEAL_EVERY } from '../src/sim/systems/enemies';
-import { startWave } from '../src/sim/systems/waves';
+import { VIGOR_HP, startWave } from '../src/sim/systems/waves';
 import { createGame, step } from '../src/sim/world';
 import { botInput } from './helpers';
 
@@ -75,5 +75,22 @@ describe('waves and bosses', () => {
       if (type === 'broodmother') expect(s.enemies.some((e) => e.type === 'egg') || s.kills > 0).toBe(true);
       if (type === 'wyrm' && !boss.dead) expect(boss.trail.length).toBeGreaterThan(4);
     }
+  });
+
+  it('grants max HP after every 5th wave without any perk', () => {
+    const s = createGame(9, [{ id: 'p1', charId: 'mage' }], { godMode: true });
+    const p = s.players[0];
+    const base = p.stats.maxHp;
+    startWave(s, 5);
+    expect(p.stats.maxHp).toBe(base);
+    p.hp = 20;
+    startWave(s, 6);
+    expect(p.stats.maxHp).toBe(base + VIGOR_HP);
+    expect(p.hp).toBe(20 + VIGOR_HP);
+    expect(s.events.some((e) => e.t === 'vigor' && e.v === VIGOR_HP)).toBe(true);
+    startWave(s, 7);
+    expect(p.stats.maxHp).toBe(base + VIGOR_HP);
+    startWave(s, 16);
+    expect(p.stats.maxHp).toBe(base + 3 * VIGOR_HP);
   });
 });

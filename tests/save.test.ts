@@ -39,4 +39,16 @@ describe('saving runs', () => {
     expect(bosses[0].hp).toBeCloseTo(b.hp);
     expect(r.wave.n).toBe(20);
   });
+
+  it('upgrades a v3 save by granting the wave max HP it predates', () => {
+    const s = createGame(49, [{ id: 'p1', charId: 'knight' }], { godMode: true });
+    s.wave.n = 12;
+    const save = JSON.parse(JSON.stringify(snapshot(s, 0)));
+    save.v = 3;
+    delete save.state.players[0].vigorHp;
+    const r = restore(save)!;
+    expect(r).not.toBeNull();
+    expect(r.players[0].vigorHp).toBe(10);
+    expect(r.players[0].stats.maxHp).toBe(s.players[0].stats.maxHp + 10);
+  });
 });

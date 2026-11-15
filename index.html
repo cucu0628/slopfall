@@ -18,6 +18,13 @@
             CONTINUE<span id="continue-info"></span>
           </button>
           <button id="btn-play" class="btn primary">NEW RUN</button>
+          <div class="row menu-row">
+            <button id="btn-codex" class="btn small">Codex</button>
+            <button id="btn-export" class="btn small hidden">Export save</button>
+            <button id="btn-import" class="btn small">Import save</button>
+            <input id="import-file" type="file" accept=".json,application/json" hidden />
+          </div>
+          <p id="save-msg" class="save-msg hidden"></p>
           <a
             class="btn bug-report"
             href="https://github.com/cucu0628/slopfall/issues/new?template=bug_report.yml"
@@ -43,6 +50,12 @@
         <h2>Choose your hero</h2>
         <div id="char-grid" class="char-grid"></div>
         <button id="btn-back" class="btn">Back</button>
+      </section>
+
+      <section id="screen-codex" class="screen hidden">
+        <h2>Codex</h2>
+        <div id="codex-list" class="codex-list"></div>
+        <button id="btn-codex-back" class="btn">Back</button>
       </section>
 
       <section id="screen-levelup" class="screen overlay hidden">
