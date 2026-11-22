@@ -19,6 +19,32 @@ static void first_frame_cb(MyApplication* self, FlView* view) {
   gtk_widget_show(gtk_widget_get_toplevel(GTK_WIDGET(view)));
 }
 
+static gboolean is_fullscreen = FALSE;
+
+static gboolean window_state_cb(GtkWidget* widget, GdkEventWindowState* event,
+                                gpointer data) {
+  is_fullscreen =
+      (event->new_window_state & GDK_WINDOW_STATE_FULLSCREEN) != 0;
+  return FALSE;
+}
+
+static void window_method_cb(FlMethodChannel* channel, FlMethodCall* call,
+                             gpointer user_data) {
+  GtkWindow* window = GTK_WINDOW(user_data);
+  g_autoptr(FlMethodResponse) response = nullptr;
+  if (g_strcmp0(fl_method_call_get_name(call), "toggleFullscreen") == 0) {
+    if (is_fullscreen) {
+      gtk_window_unfullscreen(window);
+    } else {
+      gtk_window_fullscreen(window);
+    }
+    response = FL_METHOD_RESPONSE(fl_method_success_response_new(nullptr));
+  } else {
+    response = FL_METHOD_RESPONSE(fl_method_not_implemented_response_new());
+  }
+  fl_method_call_respond(call, response, nullptr);
+}
+
 // Implements GApplication::activate.
 static void my_application_activate(GApplication* application) {
   MyApplication* self = MY_APPLICATION(application);
@@ -45,14 +71,31 @@ static void my_application_activate(GApplication* application) {
   if (use_header_bar) {
     GtkHeaderBar* header_bar = GTK_HEADER_BAR(gtk_header_bar_new());
     gtk_widget_show(GTK_WIDGET(header_bar));
-    gtk_header_bar_set_title(header_bar, "nightfall");
+    gtk_header_bar_set_title(header_bar, "Nightfall Survivors");
     gtk_header_bar_set_show_close_button(header_bar, TRUE);
     gtk_window_set_titlebar(window, GTK_WIDGET(header_bar));
   } else {
-    gtk_window_set_title(window, "nightfall");
+    gtk_window_set_title(window, "Nightfall Survivors");
   }
 
+  g_signal_connect(window, "window-state-event", G_CALLBACK(window_state_cb),
+                   nullptr);
   gtk_window_set_default_size(window, 1280, 720);
+  {
+    // window icon from the bundle's data directory
+    g_autofree gchar* exe = g_file_read_link("/proc/self/exe", nullptr);
+    if (exe != nullptr) {
+      g_autofree gchar* dir = g_path_get_dirname(exe);
+      g_autofree gchar* icon =
+          g_build_filename(dir, "data", "app_icon.png", nullptr);
+      gtk_window_set_icon_from_file(window, icon, nullptr);
+    }
+  }
+  // smaller windows squeeze the HUD and menus too much
+  GdkGeometry min_size = {};
+  min_size.min_width = 640;
+  min_size.min_height = 400;
+  gtk_window_set_geometry_hints(window, nullptr, &min_size, GDK_HINT_MIN_SIZE);
 
   g_autoptr(FlDartProject) project = fl_dart_project_new();
   fl_dart_project_set_dart_entrypoint_arguments(
@@ -62,7 +105,7 @@ static void my_application_activate(GApplication* application) {
   GdkRGBA background_color;
   // Background defaults to black, override it here if necessary, e.g. #00000000
   // for transparent.
-  gdk_rgba_parse(&background_color, "#000000");
+  gdk_rgba_parse(&background_color, "#0b0d17");
   fl_view_set_background_color(view, &background_color);
   gtk_widget_show(GTK_WIDGET(view));
   gtk_container_add(GTK_CONTAINER(window), GTK_WIDGET(view));
@@ -74,6 +117,14 @@ static void my_application_activate(GApplication* application) {
   gtk_widget_realize(GTK_WIDGET(view));
 
   fl_register_plugins(FL_PLUGIN_REGISTRY(view));
+
+  // nightfall/window: toggleFullscreen (F11)
+  g_autoptr(FlStandardMethodCodec) codec = fl_standard_method_codec_new();
+  FlMethodChannel* channel = fl_method_channel_new(
+      fl_engine_get_binary_messenger(fl_view_get_engine(view)),
+      "nightfall/window", FL_METHOD_CODEC(codec));
+  fl_method_channel_set_method_call_handler(
+      channel, window_method_cb, g_object_ref(window), g_object_unref);
 
   gtk_widget_grab_focus(GTK_WIDGET(view));
 }

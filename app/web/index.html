@@ -1,46 +1,48 @@
 <!DOCTYPE html>
-<html>
+<!-- Nightfall Survivors (c) 2026 cucu0628. All rights reserved. See LICENSE. -->
+<html lang="en">
 <head>
-  <!--
-    If you are serving your web app in a path other than the root, change the
-    href value below to reflect the base path you are serving from.
-
-    The path provided below has to start and end with a slash "/" in order for
-    it to work correctly.
-
-    For more details:
-    * https://developer.mozilla.org/en-US/docs/Web/HTML/Element/base
-
-    This is a placeholder for base href that will be replaced by the value of
-    the `--base-href` argument provided to `flutter build`.
-  -->
   <base href="$FLUTTER_BASE_HREF">
-
   <meta charset="UTF-8">
-  <meta content="IE=Edge" http-equiv="X-UA-Compatible">
-  <meta name="description" content="Nightfall Survivors - survivor roguelite">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+  <meta name="description" content="Nightfall Survivors – a survivor roguelite">
+  <meta name="theme-color" content="#0b0d17">
+  <meta name="author" content="cucu0628">
 
-  <!-- iOS meta tags & icons -->
   <meta name="mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black">
-  <meta name="apple-mobile-web-app-title" content="nightfall">
-  <link rel="apple-touch-icon" href="icons/Icon-192.png">
-
-  <!-- Favicon -->
-  <link rel="icon" type="image/png" href="favicon.png"/>
-
-  <title>nightfall</title>
+  <meta name="apple-mobile-web-app-title" content="Nightfall">
+  <link rel="apple-touch-icon" href="apple-touch-icon.png">
+  <link rel="icon" href="favicon.svg" type="image/svg+xml">
+  <link rel="icon" href="favicon.png" type="image/png" sizes="32x32">
   <link rel="manifest" href="manifest.json">
+
+  <title>Nightfall Survivors</title>
+  <style>
+    html, body { margin: 0; height: 100%; background: #0b0d17; overflow: hidden; }
+    /* shown until Flutter draws its first frame */
+    #loading {
+      position: fixed; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 18px;
+      font: 900 clamp(28px, 6vw, 56px) system-ui, sans-serif; letter-spacing: 0.08em; color: #fff;
+      text-shadow: 0 0 24px rgba(160, 110, 255, 0.8), 0 0 60px rgba(79, 163, 255, 0.5);
+      transition: opacity 0.3s;
+    }
+    #loading small { font-size: 14px; font-weight: 600; letter-spacing: 0.3em; color: #9aa3c4; text-shadow: none; }
+    #loading i { width: 140px; height: 3px; border-radius: 2px; background: linear-gradient(90deg, transparent, #4fa3ff, transparent) 0 0 / 50% 100% no-repeat, rgba(130,150,255,0.15); animation: bar 1.1s linear infinite; }
+    @keyframes bar { from { background-position: -70px 0, 0 0; } to { background-position: 140px 0, 0 0; } }
+  </style>
 </head>
 <body>
-  <!--
-    You can customize the "flutter_bootstrap.js" script.
-    This is useful to provide a custom configuration to the Flutter loader
-    or to give the user feedback during the initialization process.
-
-    For more details:
-    * https://docs.flutter.dev/platform-integration/web/initialization
-  -->
+  <div id="loading">NIGHTFALL<small>LOADING</small><i></i></div>
+  <!-- flutter_soloud web audio engine -->
+  <script src="assets/packages/flutter_soloud/web/init_soloud.js" defer></script>
+  <script>
+    window.addEventListener('flutter-first-frame', () => {
+      const l = document.getElementById('loading');
+      l.style.opacity = '0';
+      setTimeout(() => l.remove(), 400);
+    });
+  </script>
   <script src="flutter_bootstrap.js" async></script>
 </body>
 </html>

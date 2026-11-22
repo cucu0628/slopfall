@@ -33,6 +33,6 @@ Future<void> leaveGame() async {
 
 /// Coarse pointer and no hover: a phone or tablet browser.
 bool get isTouchPlatform {
-  final m = web.window.matchMedia;
-  return m('(pointer: coarse)').matches || (web.window.navigator.maxTouchPoints > 0 && m('(hover: none)').matches);
+  final w = web.window;
+  return w.matchMedia('(pointer: coarse)').matches || (w.navigator.maxTouchPoints > 0 && w.matchMedia('(hover: none)').matches);
 }

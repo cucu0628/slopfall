@@ -1,23 +1,33 @@
 # Nightfall Survivors
 
-Browser-based 2D survivor roguelite (Vampire Survivors style) built with TypeScript + Canvas 2D. No runtime dependencies and no image assets — everything is drawn procedurally.
+2D survivor roguelite (Vampire Survivors style) built with Dart + Flutter. Runs on **Linux, Windows, the web and Android** from one codebase. No image assets — everything is drawn procedurally, and the sound effects are synthesized.
 
 ```bash
-npm install
-npm run dev      # play at http://localhost:3064
-npm run test     # simulation tests (determinism, waves, level-ups)
-npm run typecheck  # strict TypeScript check
-npm run build    # type-check + production build into dist/
-npm run preview  # serve the production build on port 3064
+# play
+cd app
+flutter run -d linux          # or -d chrome, -d windows, or a connected Android device
+
+# check
+cd packages/nightfall_sim && dart test      # simulation tests (determinism, waves, level-ups, parity with the original)
+cd app && flutter analyze && flutter test   # app tests
+
+# build
+cd app
+flutter build web --release --wasm          # static site in build/web
+flutter build linux --release               # build/linux/x64/release/bundle
+flutter build windows --release             # on Windows
+flutter build apk --release                 # Android
 ```
 
-Both the dev server and `preview` listen on all interfaces on port **3064** (see `vite.config.ts`).
+Linux desktop builds need `clang cmake ninja-build pkg-config` and the GTK 3 development package (e.g. `sudo dnf install clang cmake ninja-build pkgconf-pkg-config gtk3-devel`).
 
 ## Hosting
-Every push to `main` runs `.github/workflows/deploy.yml`: it installs, runs the tests, builds and publishes `dist/` to GitHub Pages at **https://cucu0628.github.io/slopfall/**. The game is a static site, so `dist/` can also be served by any web server.
+Every push to `main` runs `.github/workflows/deploy.yml`: it runs the tests, builds the web app and publishes `app/build/web` to GitHub Pages at **https://game.asked.hu/**. Tagging a release (`v1.2.0`) runs `release.yml`, which attaches Linux, Windows and Android builds to the GitHub release.
+
+The game used to be a TypeScript + Canvas 2D web app; that version is kept on the `legacy/typescript` branch. Saves carry over: on the same website the old save slot is picked up automatically, and exported save files can be imported on any platform.
 
 ## Controls
-WASD / arrows move · mouse aims · Space or right click uses your hero's ability · Shift dashes · 1–3 picks a level-up · Esc pauses · M mutes.
+WASD / arrows move · mouse aims · Space or right click uses your hero's ability · Shift dashes · 1–3 picks a level-up · Esc pauses · M mutes · F11 fullscreen (desktop and web).
 
 On phones and tablets on-screen controls appear automatically: drag on the left half to move (aiming is automatic), ★ ability, » dash, ❚❚ pause.
 
@@ -25,7 +35,7 @@ On phones and tablets on-screen controls appear automatically: drag on the left 
 - **6 heroes**, each with a starting weapon, a passive and an active ability (Knight, Mage, Ranger, Necromancer, Engineer, Berserker).
 - **10 weapons** (8 levels each). At max level a chest unlocks an **evolution**; five weapons have two evolution paths (each needs a different perk) and the player picks one.
 - **14 perks** (incl. Vampirism lifesteal and Ignite burn); level-ups can roll **Rare** (×1.4) or **Epic** (×1.8) strength. Max 6 weapon + 6 perk slots.
-- The current run is **saved in the browser** (every few seconds and when the tab is hidden/closed) and can be continued from the main menu. Saves can be **exported to a file and imported** (e.g. to move a run to another device).
+- The current run is **saved** (every few seconds and when the app is hidden or closed) and can be continued from the main menu. Saves can be **exported to a file and imported** (e.g. to move a run to another device).
 - The main menu has a **Codex** describing every enemy and boss.
 - Heroes gain **+5 max HP after every 5th wave**, even without HP perks.
 - **9 enemy types** + elites, **6 bosses** every 5th wave (two at once from wave 20), endless scaling waves, anti-AFK meteors.
@@ -36,20 +46,21 @@ On phones and tablets on-screen controls appear automatically: drag on the left 
 ## Contributing
 Bug reports and ideas are welcome through the issue templates (**Bug report** / **Feature request**).
 
-Pull requests are welcome too: read [AGENT.md](AGENT.md) first (architecture, rules and step-by-step recipes for new weapons, perks, enemies, bosses and heroes). Every PR is checked by CI (`npm run typecheck`, `npm test`, build). By opening a pull request you agree to the contribution terms in [LICENSE](LICENSE).
+Pull requests are welcome too: read [AGENT.md](AGENT.md) first (architecture, rules and step-by-step recipes for new weapons, perks, enemies, bosses and heroes). Every PR is checked by CI (simulation tests incl. web parity, `flutter analyze`, `flutter test`, web build). By opening a pull request you agree to the contribution terms in [LICENSE](LICENSE).
 
 ## Project structure
 ```
-src/sim/        deterministic game rules (no DOM) – content/ data tables, systems/ per-tick logic,
-                systems/weapons/ and systems/bosses/ one file per weapon / boss
-src/client/     browser side – app flow, input/touch, audio, render/ (entities/, heroes/), ui/ (screens, styles/)
-tests/          vitest suites by topic
+packages/nightfall_sim/   deterministic game rules (pure Dart) – content/ data tables, systems/ per-tick logic,
+                          systems/weapons/ and systems/bosses/ one file per weapon / boss, test/ suites by topic
+app/                      Flutter client – game/ loop and input, render/ (entities/, heroes/), ui/ screens,
+                          audio/ (synthesized sounds), storage/ (save slot), platform/ (fullscreen, wakelock)
+src/, tests/              the original TypeScript version, the reference the Dart port is tested against
 ```
 
 ## Architecture (multiplayer-ready)
-- `src/sim/` is a pure, deterministic simulation: no DOM, no `Math.random`/`Date.now`, seeded RNG stored in the state, fixed 60 Hz `step(state, inputs)`.
-- `GameState` is plain JSON-serializable data with a `players[]` array; every player decision (movement, aim, ability, level-up choice) is an `InputCmd`.
-- The sim emits `events[]`; the client (`src/client/`) turns them into particles, sounds and UI.
-- Content (heroes, weapons, perks, enemies) lives in data tables under `src/sim/content/`.
+- `packages/nightfall_sim` is a pure, deterministic simulation: no Flutter, no clock, seeded RNG stored in the state, fixed 60 Hz `step(state, inputs)`. It gives bit-identical results on the Dart VM, compiled to JavaScript and to WebAssembly (its own `sin`/`cos`/`atan2` and 32-bit integer helpers make sure of that), and matches the original TypeScript game tick for tick.
+- `GameState` is plain JSON-serializable data with a `players` list; every player decision (movement, aim, ability, level-up choice) is an `InputCmd`.
+- The sim emits events; the client (`app/`) turns them into particles, sounds and UI.
+- Content (heroes, weapons, perks, enemies) lives in data tables under `lib/src/content/`.
 
-To add multiplayer later, run `src/sim` on a server (or in lockstep on every client), collect each player's `InputCmd` per tick, and broadcast inputs or state snapshots. For co-op, set `cfg.pauseOnLevelUp = false`.
+To add multiplayer later, run the simulation on a server (or in lockstep on every client — all platforms compute the same results), collect each player's `InputCmd` per tick, and broadcast inputs or state snapshots. For co-op, create the game with `pauseOnLevelUp: false`.

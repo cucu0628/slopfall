@@ -89,13 +89,13 @@ BEGIN
     BEGIN
         BLOCK "040904e4"
         BEGIN
-            VALUE "CompanyName", "hu.asked" "\0"
-            VALUE "FileDescription", "nightfall" "\0"
+            VALUE "CompanyName", "cucu0628" "\0"
+            VALUE "FileDescription", "Nightfall Survivors" "\0"
             VALUE "FileVersion", VERSION_AS_STRING "\0"
             VALUE "InternalName", "nightfall" "\0"
-            VALUE "LegalCopyright", "Copyright (C) 2026 hu.asked. All rights reserved." "\0"
+            VALUE "LegalCopyright", "Copyright (C) 2026 cucu0628. All rights reserved." "\0"
             VALUE "OriginalFilename", "nightfall.exe" "\0"
-            VALUE "ProductName", "nightfall" "\0"
+            VALUE "ProductName", "Nightfall Survivors" "\0"
             VALUE "ProductVersion", VERSION_AS_STRING "\0"
         END
     END
