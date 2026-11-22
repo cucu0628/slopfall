@@ -16,8 +16,9 @@ const Map<String, double> _minGap = {
   'bolt': 0.06, 'arrow': 0.05, 'zap': 0.08, 'frost': 0.1, 'hurt': 0.15,
 };
 
-/// Engine volume at 100 % (the original WebAudio master gain).
-const double _masterVolume = 0.22;
+/// Engine volume at 100 %. About 9 dB louder than the original WebAudio
+/// master gain (0.22); the limiter below keeps busy moments from clipping.
+const double _masterVolume = 0.62;
 
 class Sound implements SoundSink {
   final Map<String, AudioSource> _sources = {};
@@ -48,6 +49,16 @@ class Sound implements SoundSink {
       final soloud = SoLoud.instance;
       if (!soloud.isInitialized) await soloud.init(bufferSize: 1024);
       soloud.setMaxActiveVoiceCount(32);
+      // many sounds at once (a wave of kills, explosions) would clip at this
+      // volume: a limiter on the final mix keeps it clean instead
+      try {
+        final limiter = soloud.filters.limiterFilter;
+        if (!limiter.isActive) limiter.activate();
+        limiter.threshold.value = -4;
+        limiter.outputCeiling.value = -1;
+      } catch (e) {
+        debugPrint('limiter unavailable: $e');
+      }
       _applyVolume();
       for (final e in soundRecipes().entries) {
         final pcm = renderLeveled(e.value, soundLevels[e.key] ?? -19, loudness);
