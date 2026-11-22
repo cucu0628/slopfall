@@ -1,5 +1,8 @@
 import 'dart:math' as math;
 import 'dart:typed_data';
+import 'dart:ui' as ui;
+
+import 'package:flutter/painting.dart';
 
 import 'package:nightfall_sim/nightfall_sim.dart';
 
@@ -20,38 +23,85 @@ final Map<String, List<int>> _rgb = {
 };
 
 /// Top-right minimap: terrain, obstacles, enemies, bosses, pickups and players.
+///
+/// The terrain (thousands of biome samples) is re-sampled a slice per frame
+/// while the old one is still shown, and drawn as one colour mesh; static
+/// obstacles are recorded once per refresh. Nothing here stalls a frame.
 class Minimap {
-  Image2D? _terrain;
+  ui.Vertices? _mesh;
+  ui.Picture? _obstacles;
+  double _obstaclesK = 0;
   double _tx = double.nan;
   double _ty = double.nan;
   int _seed = -1;
+  _Sampling? _job;
 
-  void _refreshTerrain(int seed, double cx, double cy) {
-    const half = _range + _margin;
-    final n = ((half * 2) / _sample).ceil();
-    final px = Uint8List(n * n * 4);
-    for (var j = 0; j < n; j++) {
+  static const double _half = _range + _margin;
+  static final int _n = ((_half * 2) / _sample).ceil();
+
+  bool _needsRefresh(int seed, Player me) =>
+      seed != _seed || !((me.x - _tx).abs() <= _margin * 0.5) || !((me.y - _ty).abs() <= _margin * 0.5);
+
+  void _advance(int budget) {
+    final j = _job!;
+    final n = _n;
+    while (budget-- > 0 && j.next < n * n) {
+      final i = j.next % n, k = j.next ~/ n;
+      final rgb = _rgb[biomeAt(j.seed, j.cx - _half + (i + 0.5) * _sample, j.cy - _half + (k + 0.5) * _sample)]!;
+      j.colors[j.next] = (0xe6 << 24) | (rgb[0] << 16) | (rgb[1] << 8) | rgb[2]; // 90 % opaque
+      j.next++;
+    }
+    if (j.next < n * n) return;
+    // done: a mesh around the sampled centre, in world units relative to it
+    final pos = Float32List(n * n * 2);
+    for (var k = 0; k < n; k++) {
       for (var i = 0; i < n; i++) {
-        final rgb = _rgb[biomeAt(seed, cx - half + (i + 0.5) * _sample, cy - half + (j + 0.5) * _sample)]!;
-        final o = (j * n + i) * 4;
-        px[o] = rgb[0];
-        px[o + 1] = rgb[1];
-        px[o + 2] = rgb[2];
-        px[o + 3] = 255;
+        final v = k * n + i;
+        pos[v * 2] = -_half + (i + 0.5) * _sample;
+        pos[v * 2 + 1] = -_half + (k + 0.5) * _sample;
       }
     }
-    _terrain?.dispose();
-    _terrain = imageFromPixels(n, n, px);
-    _tx = cx;
-    _ty = cy;
-    _seed = seed;
+    final idx = Uint16List((n - 1) * (n - 1) * 6);
+    var q = 0;
+    for (var k = 0; k < n - 1; k++) {
+      for (var i = 0; i < n - 1; i++) {
+        final a = k * n + i, b = a + 1, c = a + n, d = c + 1;
+        idx.setAll(q, [a, b, c, b, d, c]);
+        q += 6;
+      }
+    }
+    _mesh?.dispose();
+    _mesh = ui.Vertices.raw(VertexMode.triangles, pos, colors: j.colors, indices: idx);
+    _tx = j.cx;
+    _ty = j.cy;
+    _seed = j.seed;
+    _obstacles?.dispose();
+    _obstacles = null;
+    _job = null;
+  }
+
+  /// Obstacles around the sampled centre as small squares (at least 1 minimap pixel).
+  ui.Picture _recordObstacles(double k) {
+    final rec = ui.PictureRecorder();
+    final c = Canvas(rec);
+    final paint = Paint()..color = const Color.fromRGBO(150, 155, 175, 0.55);
+    final c0x = ((_tx - _half) / chunkSize).floor(), c1x = ((_tx + _half) / chunkSize).floor();
+    final c0y = ((_ty - _half) / chunkSize).floor(), c1y = ((_ty + _half) / chunkSize).floor();
+    for (var gx = c0x; gx <= c1x; gx++) {
+      for (var gy = c0y; gy <= c1y; gy++) {
+        for (final o in getChunk(_seed, gx, gy).obstacles) {
+          final r = math.max(1 / k, o.r);
+          c.drawRect(Rect.fromLTWH(o.x - _tx - r, o.y - _ty - r, r * 2, r * 2), paint);
+        }
+      }
+    }
+    return rec.endRecording();
   }
 
   void draw(Ctx2D ctx, GameState s, Player me, double x, double y, double size, double t) {
     final seed = s.mapSeed;
-    if (seed != _seed || !((me.x - _tx).abs() <= _margin * 0.7) || !((me.y - _ty).abs() <= _margin * 0.7)) {
-      _refreshTerrain(seed, me.x, me.y);
-    }
+    if (_job == null && _needsRefresh(seed, me)) _job = _Sampling(seed, me.x, me.y, Int32List(_n * _n));
+    if (_job != null) _advance(_mesh == null || _job!.seed != _seed ? _n * _n : 700);
     final k = size / (_range * 2); // world -> minimap pixels
     final cx = x + size / 2, cy = y + size / 2;
     (double, double) map(double wx, double wy) => (cx + (wx - me.x) * k, cy + (wy - me.y) * k);
@@ -61,27 +111,22 @@ class Minimap {
     ctx.roundRect(x, y, size, size, 10);
     ctx.clip();
 
-    // terrain
-    const half = _range + _margin;
-    ctx.imageSmoothingEnabled = true;
-    ctx.imageSmoothingQuality = 'high';
-    ctx.globalAlpha = 0.9;
-    final (tx0, ty0) = map(_tx - half, _ty - half);
-    ctx.drawImage(_terrain!, tx0, ty0, half * 2 * k, half * 2 * k);
-    ctx.globalAlpha = 1;
-
-    // obstacles
-    ctx.fillStyle = 'rgba(150,155,175,0.55)';
-    final c0x = ((me.x - _range) / chunkSize).floor(), c1x = ((me.x + _range) / chunkSize).floor();
-    final c0y = ((me.y - _range) / chunkSize).floor(), c1y = ((me.y + _range) / chunkSize).floor();
-    for (var gx = c0x; gx <= c1x; gx++) {
-      for (var gy = c0y; gy <= c1y; gy++) {
-        for (final o in getChunk(seed, gx, gy).obstacles) {
-          final (ox, oy) = map(o.x, o.y);
-          final r = math.max(1.0, o.r * k);
-          ctx.fillRect(ox - r, oy - r, r * 2, r * 2);
-        }
-      }
+    // terrain and obstacles, one draw call each
+    if (k != _obstaclesK) {
+      _obstacles?.dispose();
+      _obstacles = null;
+      _obstaclesK = k;
+    }
+    final mesh = _mesh;
+    if (mesh != null) {
+      final obstacles = _obstacles ??= _recordObstacles(k);
+      ctx.canvas
+        ..save()
+        ..translate(cx + (_tx - me.x) * k, cy + (_ty - me.y) * k)
+        ..scale(k)
+        ..drawVertices(mesh, BlendMode.dst, Paint())
+        ..drawPicture(obstacles)
+        ..restore();
     }
 
     // view rectangle hint
@@ -159,5 +204,17 @@ class Minimap {
     ctx.stroke();
   }
 
-  void dispose() => _terrain?.dispose();
+  void dispose() {
+    _mesh?.dispose();
+    _obstacles?.dispose();
+  }
+}
+
+/// A terrain re-sample in progress.
+class _Sampling {
+  final int seed;
+  final double cx, cy;
+  final Int32List colors;
+  int next = 0;
+  _Sampling(this.seed, this.cx, this.cy, this.colors);
 }

@@ -4,6 +4,9 @@
 import 'dart:collection';
 import 'dart:math' as math;
 import 'dart:typed_data';
+import 'dart:ui' as ui;
+
+import 'package:flutter/painting.dart';
 
 import 'package:nightfall_sim/nightfall_sim.dart';
 
@@ -46,6 +49,9 @@ const Map<String, String> minimapRgb = {
 /// GPU memory budget for cached ground chunks, in 512×512 (1×) chunks.
 const int _cacheBudget = 48;
 const int _maxNewPerFrame = 2;
+/// Chunk bitmaps being made on the raster thread at once.
+const int _maxRasterizing = 3;
+const double _chunkD = 512;
 
 int _chunkKey(int cx, int cy) => (cx + 32768) * 65536 + (cy + 32768);
 
@@ -58,75 +64,197 @@ double Function() rngFrom(int h) {
   };
 }
 
+/// One cached ground chunk: drawn from its vector recording right away and
+/// replaced by a bitmap once the raster thread has finished it, so a new
+/// chunk never stalls a frame.
+class _GroundTile {
+  ui.Picture? picture;
+  Image2D? image;
+  final double res;
+  bool disposed = false;
+  _GroundTile(this.picture, this.res);
+
+  void dispose() {
+    disposed = true;
+    picture?.dispose();
+    picture = null;
+    image?.dispose();
+    image = null;
+  }
+}
+
 class WorldRenderer {
   // insertion order = LRU order
-  final LinkedHashMap<int, Image2D> _ground = LinkedHashMap();
+  final LinkedHashMap<int, _GroundTile> _ground = LinkedHashMap();
   int _seed = -1;
   double _res = 1; // pixels per world unit of the cached ground
+  int _rasterizing = 0;
   Gradient2D? _vignette;
+
+  /// Benchmarks: time (µs) spent recording new chunks / starting rasterization.
+  Map<String, int>? profile;
+  final Stopwatch _sw = Stopwatch();
   String _vigSize = '';
 
   // -------------------------------------------------------------- ground
 
-  Image2D _renderChunk(int seed, int cx, int cy, double res) {
+  /// The chunk's ground, recorded in chunk-local world units (0..512).
+  ui.Picture _recordChunk(int seed, int cx, int cy) {
     final ox = cx * _chunk, oy = cy * _chunk;
     final chunk = getChunk(seed, cx, cy);
+    final rec = ui.PictureRecorder();
+    final canvas = Canvas(rec, const Rect.fromLTWH(0, 0, _chunkD, _chunkD));
+    // half a unit of overlap with the neighbours, no anti-aliased edge: no seams
+    canvas.clipRect(const Rect.fromLTWH(-0.5, -0.5, _chunkD + 1, _chunkD + 1), doAntiAlias: false);
+    final g = Ctx2D(canvas);
 
     // Base colour field: biome colours sampled on a world-aligned grid (the
-    // samples on a chunk edge are shared with the neighbour) and bilinearly
-    // upscaled, so there are no visible chunk seams and biomes blend softly.
-    final n = _chunk ~/ _fieldStep + 1;
-    final px = Uint8List(n * n * 4);
+    // samples on a chunk edge are shared with the neighbour) and blended
+    // across a triangle mesh, so there are no seams and biomes blend softly.
+    const n = _chunk ~/ _fieldStep + 1;
+    final pos = Float32List(n * n * 2);
+    final cols = Int32List(n * n);
     for (var j = 0; j < n; j++) {
       for (var i = 0; i < n; i++) {
+        final k = j * n + i;
+        pos[k * 2] = (i * _fieldStep).toDouble();
+        pos[k * 2 + 1] = (j * _fieldStep).toDouble();
         final rgb = _baseRgb[biomeAt(seed, (ox + i * _fieldStep).toDouble(), (oy + j * _fieldStep).toDouble())]!;
-        final k = (j * n + i) * 4;
-        px[k] = rgb[0];
-        px[k + 1] = rgb[1];
-        px[k + 2] = rgb[2];
-        px[k + 3] = 255;
+        cols[k] = (0xff << 24) | (rgb[0] << 16) | (rgb[1] << 8) | rgb[2];
       }
     }
-    final low = imageFromPixels(n, n, px);
+    final idx = Uint16List((n - 1) * (n - 1) * 6);
+    var q = 0;
+    for (var j = 0; j < n - 1; j++) {
+      for (var i = 0; i < n - 1; i++) {
+        final a = j * n + i, b = a + 1, c = a + n, d = c + 1;
+        idx.setAll(q, [a, b, c, b, d, c]);
+        q += 6;
+      }
+    }
+    final field = ui.Vertices.raw(VertexMode.triangles, pos, colors: cols, indices: idx);
+    canvas.drawVertices(field, BlendMode.dst, Paint());
+    field.dispose();
 
-    final px2 = (_chunk * res).round();
-    final img = offscreen(px2, px2, (g) {
-      g.scale(res, res);
-      g.imageSmoothingEnabled = true;
-      g.imageSmoothingQuality = 'high';
-      g.drawImage(low, -_fieldStep / 2, -_fieldStep / 2, n * _fieldStep, n * _fieldStep);
+    // Soft detail blobs on a global grid, coloured by the biome at their
+    // centre, so they continue seamlessly across chunk edges.
+    final gx0 = (ox / _blob).floor() - 1, gx1 = ((ox + _chunk) / _blob).floor() + 1;
+    final gy0 = (oy / _blob).floor() - 1, gy1 = ((oy + _chunk) / _blob).floor() + 1;
+    for (var gx = gx0; gx <= gx1; gx++) {
+      for (var gy = gy0; gy <= gy1; gy++) {
+        final r = rngFrom(hash(seed, gx, gy, 4));
+        final bx = (gx + r()) * _blob, by = (gy + r()) * _blob;
+        final rad = 30 + r() * 50;
+        final pal = _palette[biomeAt(seed, bx, by)]!;
+        final col = r() < 0.5 ? pal.blot : pal.dark;
+        final lx = bx - ox, ly = by - oy;
+        if (lx < -rad || ly < -rad || lx > _chunk + rad || ly > _chunk + rad) continue;
+        final grad = g.createRadialGradient(lx, ly, rad * 0.2, lx, ly, rad);
+        grad.addColorStop(0, col);
+        grad.addColorStop(1, '${col}00');
+        g.fillStyle = grad;
+        g.globalAlpha = 0.6;
+        g.beginPath();
+        g.arc(lx, ly, rad, 0, _tau);
+        g.fill();
+      }
+    }
+    g.globalAlpha = 1;
 
-      // Soft detail blobs on a global grid, coloured by the biome at their
-      // centre, so they continue seamlessly across chunk edges.
-      final gx0 = (ox / _blob).floor() - 1, gx1 = ((ox + _chunk) / _blob).floor() + 1;
-      final gy0 = (oy / _blob).floor() - 1, gy1 = ((oy + _chunk) / _blob).floor() + 1;
-      for (var gx = gx0; gx <= gx1; gx++) {
-        for (var gy = gy0; gy <= gy1; gy++) {
-          final r = rngFrom(hash(seed, gx, gy, 4));
-          final bx = (gx + r()) * _blob, by = (gy + r()) * _blob;
-          final rad = 30 + r() * 50;
-          final pal = _palette[biomeAt(seed, bx, by)]!;
-          final col = r() < 0.5 ? pal.blot : pal.dark;
-          final lx = bx - ox, ly = by - oy;
-          if (lx < -rad || ly < -rad || lx > _chunk + rad || ly > _chunk + rad) continue;
-          final grad = g.createRadialGradient(lx, ly, rad * 0.2, lx, ly, rad);
-          grad.addColorStop(0, col);
-          grad.addColorStop(1, '${col}00');
-          g.fillStyle = grad;
-          g.globalAlpha = 0.6;
-          g.beginPath();
-          g.arc(lx, ly, rad, 0, _tau);
-          g.fill();
+    for (final d in chunk.decor) {
+      _drawGroundDecor(g, d, d.x - ox, d.y - oy, _palette[chunk.biome]!);
+    }
+    g.dispose();
+    return rec.endRecording();
+  }
+
+  /// Turns the tile's recording into a bitmap on the raster thread.
+  void _rasterize(_GroundTile t) {
+    final pic = t.picture;
+    if (pic == null) return;
+    final px = (_chunk * t.res).round();
+    final rec = ui.PictureRecorder();
+    Canvas(rec)
+      ..scale(t.res)
+      ..drawPicture(pic);
+    final scaled = rec.endRecording();
+    _rasterizing++;
+    scaled.toImage(px, px).then((img) {
+      scaled.dispose();
+      _rasterizing--;
+      if (t.disposed) {
+        img.dispose();
+        return;
+      }
+      t.image = Image2D(img);
+      t.picture?.dispose();
+      t.picture = null;
+    }, onError: (Object _) {
+      scaled.dispose();
+      _rasterizing--;
+    });
+  }
+
+  /// [pixelScale] is screen pixels per world unit (view scale × device pixel ratio).
+  void drawGround(Ctx2D ctx, int seed, double minX, double minY, double maxX, double maxY, double pixelScale, [double maxRes = 2]) {
+    // cache the ground at (about) the resolution it is shown at, up to maxRes
+    final res = (pixelScale * 2).ceil().clamp(2, (maxRes * 2).round()) / 2;
+    if (seed != _seed || res != _res) {
+      for (final t in _ground.values) {
+        t.dispose();
+      }
+      _ground.clear();
+      _seed = seed;
+      _res = res;
+    }
+    final visible = (((maxX - minX) / _chunk).ceil() + 1) * (((maxY - minY) / _chunk).ceil() + 1);
+    final maxCached = math.max(visible + 8, _cacheBudget ~/ (res * res));
+    // bicubic only when the bitmap is magnified; otherwise bilinear + mipmaps
+    ctx.imageSmoothingQuality = pixelScale > res ? 'high' : 'medium';
+    var created = 0;
+    for (var cx = (minX / _chunk).floor(); cx * _chunk < maxX; cx++) {
+      for (var cy = (minY / _chunk).floor(); cy * _chunk < maxY; cy++) {
+        final key = _chunkKey(cx, cy);
+        var t = _ground.remove(key);
+        if (t != null) {
+          _ground[key] = t; // refresh LRU order
+        } else if (created < _maxNewPerFrame) {
+          created++;
+          _sw
+            ..reset()
+            ..start();
+          t = _GroundTile(_recordChunk(seed, cx, cy), res);
+          final p = profile;
+          if (p != null) p['chunk record'] = (p['chunk record'] ?? 0) + _sw.elapsedMicroseconds;
+          _ground[key] = t;
+          while (_ground.length > maxCached) {
+            _ground.remove(_ground.keys.first)?.dispose();
+          }
+        }
+        if (t != null && t.image == null && t.picture != null && _rasterizing < _maxRasterizing) {
+          _sw
+            ..reset()
+            ..start();
+          _rasterize(t);
+          final p = profile;
+          if (p != null) p['chunk raster start'] = (p['chunk raster start'] ?? 0) + _sw.elapsedMicroseconds;
+        }
+        final img = t?.image, pic = t?.picture;
+        if (img != null) {
+          ctx.drawImage(img, cx * _chunk, cy * _chunk, _chunk + 0.5, _chunk + 0.5);
+        } else if (pic != null) {
+          ctx.canvas
+            ..save()
+            ..translate((cx * _chunk).toDouble(), (cy * _chunk).toDouble())
+            ..drawPicture(pic)
+            ..restore();
+        } else {
+          ctx.fillStyle = _palette[biomeAt(seed, (cx + 0.5) * _chunk, (cy + 0.5) * _chunk)]!.base;
+          ctx.fillRect(cx * _chunk, cy * _chunk, _chunk, _chunk);
         }
       }
-      g.globalAlpha = 1;
-
-      for (final d in chunk.decor) {
-        _drawGroundDecor(g, d, d.x - ox, d.y - oy, _palette[chunk.biome]!);
-      }
-    });
-    low.dispose();
-    return img;
+    }
+    ctx.imageSmoothingQuality = 'medium';
   }
 
   void _drawGroundDecor(Ctx2D g, Decor d, double x, double y, _Palette pal) {
@@ -211,47 +339,6 @@ class WorldRenderer {
       default:
         break;
     }
-  }
-
-  /// [pixelScale] is screen pixels per world unit (view scale × device pixel ratio).
-  void drawGround(Ctx2D ctx, int seed, double minX, double minY, double maxX, double maxY, double pixelScale) {
-    // cache the ground at (about) the resolution it is shown at, up to 2×
-    final res = (pixelScale * 2).ceil().clamp(2, 4) / 2;
-    if (seed != _seed || res != _res) {
-      for (final img in _ground.values) {
-        img.dispose();
-      }
-      _ground.clear();
-      _seed = seed;
-      _res = res;
-    }
-    final visible = (((maxX - minX) / _chunk).ceil() + 1) * (((maxY - minY) / _chunk).ceil() + 1);
-    final maxCached = math.max(visible + 8, _cacheBudget ~/ (res * res));
-    ctx.imageSmoothingQuality = 'high';
-    var created = 0;
-    for (var cx = (minX / _chunk).floor(); cx * _chunk < maxX; cx++) {
-      for (var cy = (minY / _chunk).floor(); cy * _chunk < maxY; cy++) {
-        final key = _chunkKey(cx, cy);
-        var c = _ground.remove(key);
-        if (c != null) {
-          _ground[key] = c; // refresh LRU order
-        } else if (created < _maxNewPerFrame) {
-          created++;
-          c = _renderChunk(seed, cx, cy, res);
-          _ground[key] = c;
-          while (_ground.length > maxCached) {
-            _ground.remove(_ground.keys.first)?.dispose();
-          }
-        }
-        if (c != null) {
-          ctx.drawImage(c, cx * _chunk, cy * _chunk, _chunk + 0.5, _chunk + 0.5);
-        } else {
-          ctx.fillStyle = _palette[biomeAt(seed, (cx + 0.5) * _chunk, (cy + 0.5) * _chunk)]!.base;
-          ctx.fillRect(cx * _chunk, cy * _chunk, _chunk, _chunk);
-        }
-      }
-    }
-    ctx.imageSmoothingQuality = 'medium';
   }
 
   // -------------------------------------------------------------- obstacles
@@ -485,8 +572,8 @@ class WorldRenderer {
   }
 
   void dispose() {
-    for (final img in _ground.values) {
-      img.dispose();
+    for (final t in _ground.values) {
+      t.dispose();
     }
     _ground.clear();
   }

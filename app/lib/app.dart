@@ -25,6 +25,7 @@ import 'ui/screens/level_up.dart';
 import 'ui/screens/main_menu.dart';
 import 'ui/screens/pause.dart';
 import 'ui/theme.dart';
+import 'ui/perf_overlay.dart';
 import 'ui/touch_controls.dart';
 import 'ui/volume_control.dart';
 import 'ui/window_frame.dart';
@@ -80,6 +81,7 @@ class _GameShellState extends State<GameShell> {
   GameState? _saved;
   String? _saveMsg;
   bool _saveMsgError = false;
+  bool _showPerf = false; // F3
   // touch button cooldowns, refreshed a few times per second
   double _abilityCd = 0, _dashCd = 0;
 
@@ -89,7 +91,9 @@ class _GameShellState extends State<GameShell> {
   void initState() {
     super.initState();
     _touch.enabled = isTouchPlatform;
-    _renderer.touchMode = _touch.enabled;
+    _renderer
+      ..touchMode = _touch.enabled
+      ..maxGroundRes = isTouchPlatform ? 1.5 : 2;
     HardwareKeyboard.instance.addHandler(_onKey);
     _lifecycle = AppLifecycleListener(
       // closing the app, switching apps or locking the phone saves the run
@@ -259,6 +263,7 @@ class _GameShellState extends State<GameShell> {
     unawaited(_sound.unlock());
     if (key == PhysicalKeyboardKey.keyM) _toggleMute();
     if (key == PhysicalKeyboardKey.f11) unawaited(toggleFullscreen());
+    if (key == PhysicalKeyboardKey.f3) setState(() => _showPerf = !_showPerf);
     if (key == PhysicalKeyboardKey.escape && _screen == Screen.chars) {
       _setScreen(Screen.menu);
       return true;
@@ -384,6 +389,7 @@ class _GameShellState extends State<GameShell> {
                 onPause: () => _setPaused(true),
               ),
             if (overlay != null) Listener(onPointerDown: _onPointerDown, child: overlay),
+            if (_showPerf) const Positioned(left: 16, bottom: 120, child: PerfOverlay()),
           ],
         ),
       ),

@@ -43,8 +43,27 @@ class Renderer {
   /// Device pixels per logical pixel (set by the game view).
   double dpr = 1;
 
+  /// Highest resolution (pixels per world unit) of the cached ground; phones
+  /// use less to spare GPU memory and fill rate.
+  double maxGroundRes = 2;
+
   /// Phones/tablets: HUD laid out around the touch controls.
   bool touchMode = false;
+
+  /// When set, [draw] adds the time spent per phase (µs) here (benchmarks).
+  Map<String, int>? profile;
+
+  /// Worst single-frame time per phase (µs), alongside [profile].
+  final Map<String, int> profileWorst = {};
+  final Stopwatch _sw = Stopwatch();
+  void _mark(String phase) {
+    final p = profile;
+    if (p == null) return;
+    final us = _sw.elapsedMicroseconds;
+    p[phase] = (p[phase] ?? 0) + us;
+    if (us > (profileWorst[phase] ?? 0)) profileWorst[phase] = us;
+    _sw.reset();
+  }
 
   /// Touch aiming: where the ability will land (world coords).
   AimPreview? aimPreview;
@@ -62,6 +81,7 @@ class Renderer {
 
   void draw(Canvas canvas, GameState s, String localId, double alpha, Effects fx, {bool hud = true}) {
     final ctx = Ctx2D(canvas);
+    if (profile != null) _sw..reset()..start();
     final t = fx.time;
     final me = s.players.firstWhere((p) => p.id == localId, orElse: () => s.players[0]);
     camX = _lerp(me.px, me.x, alpha);
@@ -80,7 +100,10 @@ class Renderer {
     bool vis(double x, double y, [double m = 0]) => x > minX - m && x < maxX + m && y > minY - m && y < maxY + m;
 
     final seed = s.mapSeed;
-    _world.drawGround(ctx, seed, minX, minY, maxX, maxY, scale * dpr);
+    _mark('setup');
+    _world.profile = profile;
+    _world.drawGround(ctx, seed, minX, minY, maxX, maxY, scale * dpr, maxGroundRes);
+    _mark('ground');
 
     // ground telegraphs
     for (final hz in s.hazards) {
@@ -142,6 +165,7 @@ class Renderer {
     }
     ctx.globalAlpha = 1;
 
+    _mark('telegraphs/obstacles/lights');
     // glow under pickups and enemies
     ctx.globalCompositeOperation = 'lighter';
     _world.drawLightGlows(ctx, seed, minX, minY, maxX, maxY, t);
@@ -174,6 +198,7 @@ class Renderer {
       if (vis(tu.x, tu.y)) drawTurret(ctx, tu, t);
     }
 
+    _mark('glows+pickups+zones');
     // enemies, nearest local player provides the facing direction
     for (final e in s.enemies) {
       final x = _lerp(e.px, e.x, alpha), y = _lerp(e.py, e.y, alpha);
@@ -194,6 +219,7 @@ class Renderer {
       _drawPlayerBar(ctx, p, x, y);
     }
 
+    _mark('enemies+players');
     _world.drawCanopies(ctx, seed, minX, minY, maxX, maxY, camX, camY, t);
 
     for (final z in s.zones) {
@@ -212,6 +238,7 @@ class Renderer {
       if (hz.kind == 'ring' || hz.kind == 'laser') drawHazard(ctx, hz, t);
     }
 
+    _mark('canopies+projectiles');
     // additive glow on top of projectiles
     ctx.globalCompositeOperation = 'lighter';
     for (final pr in s.projectiles) {
@@ -239,6 +266,7 @@ class Renderer {
       ctx.stroke();
     }
 
+    _mark('proj glows+particles+rings');
     ctx.textAlign = 'center';
     ctx.lineJoin = 'round';
     for (final ft in fx.texts) {
@@ -254,8 +282,10 @@ class Renderer {
     ctx.globalAlpha = 1;
 
     ctx.setTransform(1, 0, 0, 1, 0, 0);
+    _mark('float texts');
     _world.drawVignette(ctx, w, h);
     if (hud) drawHud(ctx, this, s, me, fx);
+    _mark('hud+minimap');
     ctx.dispose();
   }
 

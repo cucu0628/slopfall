@@ -248,8 +248,33 @@ class Ctx2D {
   final int _baseSave;
   _State _s = _State();
   final List<_State> _stack = [];
-  Path _path = Path();
+  // The current path is built lazily: a path that is just one full circle,
+  // unrotated ellipse or rect (most enemy parts, eyes, shadows) is drawn with
+  // drawCircle / drawOval / drawRect, never becoming a Path object. That is
+  // cheaper to record, to rasterize and for the garbage collector.
+  Path? _p;
+  int _shape = 0; // 0 none, 1 oval (full arc / ellipse), 2 rect
+  Rect _shapeRect = Rect.zero;
+  double _shapeStart = 0, _shapeSweep = 0;
   bool _hasPoint = false;
+
+  /// The current path as a real Path (turning a pending simple shape into one).
+  Path get _path {
+    final p = _p ??= Path();
+    if (_shape != 0) {
+      final k = _shape;
+      _shape = 0;
+      if (k == 1) {
+        _arcInto(p, _shapeRect, _shapeStart, _shapeSweep, false);
+      } else {
+        p.addRect(_shapeRect);
+        p.moveTo(_shapeRect.left, _shapeRect.top);
+      }
+    }
+    return p;
+  }
+
+  bool get _fresh => _p == null && _shape == 0 && !_hasPoint;
   final Paint _fill = Paint()..isAntiAlias = true;
   final Paint _stroke = Paint()
     ..isAntiAlias = true
@@ -356,7 +381,8 @@ class Ctx2D {
   // ---- paths
 
   void beginPath() {
-    _path = Path();
+    _p = null;
+    _shape = 0;
     _hasPoint = false;
   }
 
@@ -381,11 +407,19 @@ class Ctx2D {
   }
 
   void closePath() {
-    if (_hasPoint) _path.close();
+    // a pending full circle / rect is already closed
+    if (_hasPoint && _shape == 0) _path.close();
   }
 
   void rect(num x, num y, num w, num h) {
-    _path.addRect(Rect.fromLTWH(x.toDouble(), y.toDouble(), w.toDouble(), h.toDouble()));
+    final r = Rect.fromLTWH(x.toDouble(), y.toDouble(), w.toDouble(), h.toDouble());
+    if (_fresh) {
+      _shape = 2;
+      _shapeRect = r;
+      _hasPoint = true;
+      return;
+    }
+    _path.addRect(r);
     _path.moveTo(x.toDouble(), y.toDouble());
     _hasPoint = true;
   }
@@ -425,13 +459,30 @@ class Ctx2D {
   void arc(num x, num y, num r, num start, num end, [bool ccw = false]) {
     final rr = r.toDouble().abs();
     final oval = Rect.fromCircle(center: Offset(x.toDouble(), y.toDouble()), radius: rr);
-    _arcInto(_path, oval, start.toDouble(), _sweep(start.toDouble(), end.toDouble(), ccw), _hasPoint);
+    final sweep = _sweep(start.toDouble(), end.toDouble(), ccw);
+    if (_fresh && sweep.abs() >= _tau - 1e-9) {
+      _shape = 1;
+      _shapeRect = oval;
+      _shapeStart = start.toDouble();
+      _shapeSweep = sweep;
+      _hasPoint = true;
+      return;
+    }
+    _arcInto(_path, oval, start.toDouble(), sweep, _hasPoint);
     _hasPoint = true;
   }
 
   void ellipse(num x, num y, num rx, num ry, num rot, num start, num end, [bool ccw = false]) {
     final sweep = _sweep(start.toDouble(), end.toDouble(), ccw);
     final oval = Rect.fromCenter(center: Offset.zero, width: rx.toDouble().abs() * 2, height: ry.toDouble().abs() * 2);
+    if (rot == 0 && _fresh && sweep.abs() >= _tau - 1e-9) {
+      _shape = 1;
+      _shapeRect = oval.shift(Offset(x.toDouble(), y.toDouble()));
+      _shapeStart = start.toDouble();
+      _shapeSweep = sweep;
+      _hasPoint = true;
+      return;
+    }
     if (rot == 0) {
       _arcInto(_path, oval.shift(Offset(x.toDouble(), y.toDouble())), start.toDouble(), sweep, _hasPoint);
     } else {
@@ -489,11 +540,36 @@ class Ctx2D {
     return p;
   }
 
-  void fill() => canvas.drawPath(_path, _fillPaint());
+  bool _drawShape(Paint paint) {
+    switch (_shape) {
+      case 1:
+        final r = _shapeRect;
+        if (r.width == r.height) {
+          canvas.drawCircle(r.center, r.width / 2, paint);
+        } else {
+          canvas.drawOval(r, paint);
+        }
+        return true;
+      case 2:
+        canvas.drawRect(Rect.fromPoints(_shapeRect.topLeft, _shapeRect.bottomRight), paint);
+        return true;
+    }
+    return false;
+  }
+
+  void fill() {
+    final paint = _fillPaint();
+    if (_drawShape(paint)) return;
+    final p = _p;
+    if (p != null) canvas.drawPath(p, paint);
+  }
 
   void stroke() {
     if (_s.dash.isEmpty) {
-      canvas.drawPath(_path, _strokePaint());
+      final paint = _strokePaint();
+      if (_drawShape(paint)) return;
+      final p = _p;
+      if (p != null) canvas.drawPath(p, paint);
     } else {
       canvas.drawPath(_dashed(_path, _s.dash, _s.dashOffset), _strokePaint());
     }
