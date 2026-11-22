@@ -61,7 +61,7 @@ app/                             Flutter client: Linux, Windows, web, Android
 
 Data flow: the client turns input into an `InputCmd` → `step(state, {playerId: cmd})` advances the sim → the sim pushes `state.events` (sealed `SimEvent` classes: hits, kills, explosions, level-ups...) → `session.dart` turns events into particles, numbers and sounds → `renderer.dart` draws `GameState`.
 
-The `src/`, `tests/`, `index.html` and npm files are the original TypeScript version, kept as the reference the Dart port is checked against (also on the `legacy/typescript` branch).
+The original TypeScript version lives on the `legacy/typescript` branch; `ts_parity_test.dart` checks the Dart port against scenarios recorded from it.
 
 ## Hard rules for `packages/nightfall_sim`
 

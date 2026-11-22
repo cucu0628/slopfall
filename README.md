@@ -54,7 +54,6 @@ packages/nightfall_sim/   deterministic game rules (pure Dart) – content/ data
                           systems/weapons/ and systems/bosses/ one file per weapon / boss, test/ suites by topic
 app/                      Flutter client – game/ loop and input, render/ (entities/, heroes/), ui/ screens,
                           audio/ (synthesized sounds), storage/ (save slot), platform/ (fullscreen, wakelock)
-src/, tests/              the original TypeScript version, the reference the Dart port is tested against
 ```
 
 ## Architecture (multiplayer-ready)
