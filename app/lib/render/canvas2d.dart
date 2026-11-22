@@ -221,6 +221,7 @@ class _State {
   String textAlign = 'start';
   String textBaseline = 'alphabetic';
   bool smoothing = true;
+  FilterQuality quality = FilterQuality.medium;
 
   _State copy() => _State()
     ..fillStyle = fillStyle
@@ -237,7 +238,8 @@ class _State {
     ..fontFamily = fontFamily
     ..textAlign = textAlign
     ..textBaseline = textBaseline
-    ..smoothing = smoothing;
+    ..smoothing = smoothing
+    ..quality = quality;
 }
 
 /// CanvasRenderingContext2D over a Flutter [Canvas].
@@ -310,6 +312,13 @@ class Ctx2D {
   set textAlign(String v) => _s.textAlign = v;
   set textBaseline(String v) => _s.textBaseline = v;
   set imageSmoothingEnabled(bool v) => _s.smoothing = v;
+
+  /// 'high' upscales with bicubic filtering (like browsers), 'low' with bilinear.
+  set imageSmoothingQuality(String v) => _s.quality = switch (v) {
+        'high' => FilterQuality.high,
+        'low' => FilterQuality.low,
+        _ => FilterQuality.medium,
+      };
 
   void save() {
     _stack.add(_s.copy());
@@ -613,7 +622,7 @@ class Ctx2D {
 
   Paint _imagePaint() => _img
     ..blendMode = _s.blend
-    ..filterQuality = _s.smoothing ? FilterQuality.medium : FilterQuality.none
+    ..filterQuality = _s.smoothing ? _s.quality : FilterQuality.none
     ..color = Color.fromRGBO(0, 0, 0, _s.globalAlpha);
 
   // ---- gradients

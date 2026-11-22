@@ -80,7 +80,9 @@ class _GameViewState extends State<GameView> with SingleTickerProviderStateMixin
         cursor: SystemMouseCursors.precise,
         child: LayoutBuilder(
           builder: (context, c) {
-            widget.session.renderer.resize(c.maxWidth, c.maxHeight);
+            widget.session.renderer
+              ..resize(c.maxWidth, c.maxHeight)
+              ..dpr = MediaQuery.devicePixelRatioOf(context);
             return RepaintBoundary(
               child: CustomPaint(
                 size: Size(c.maxWidth, c.maxHeight),

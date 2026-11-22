@@ -74,7 +74,7 @@ class LevelUpScreen extends StatelessWidget {
       overlay: true,
       children: [
         ScreenTitle(evolving ? 'Choose an evolution' : 'Level up!', color: const Color(0xffbfe0ff), glow: ScreenTitle.blueGlow),
-        Wrap(alignment: WrapAlignment.center, spacing: Nf.s4, runSpacing: Nf.s4, children: cards),
+        _CardRow(cards: cards),
         if (touch)
           Text('Tap a card', style: Nf.ui(color: Nf.muted))
         else
@@ -97,7 +97,19 @@ class _Card extends StatefulWidget {
   final int index;
   final bool touch, locked, autofocus;
   final VoidCallback? onTap;
-  const _Card({required this.view, required this.index, required this.touch, this.onTap, this.locked = false, this.autofocus = false});
+  /// In a row of equal-height cards: the key hint sits at the bottom.
+  final bool stretch;
+  const _Card({
+    required this.view,
+    required this.index,
+    required this.touch,
+    this.onTap,
+    this.locked = false,
+    this.autofocus = false,
+    this.stretch = false,
+  });
+
+  _Card stretched() => _Card(view: view, index: index, touch: touch, onTap: onTap, locked: locked, autofocus: autofocus, stretch: true);
 
   @override
   State<_Card> createState() => _CardState();
@@ -149,6 +161,7 @@ class _CardState extends State<_Card> with SingleTickerProviderStateMixin {
         child: Stack(
           clipBehavior: Clip.none,
           alignment: Alignment.topCenter,
+          fit: widget.stretch ? StackFit.expand : StackFit.loose,
           children: [
             if (v.rarity.isNotEmpty)
               Positioned(
@@ -158,6 +171,7 @@ class _CardState extends State<_Card> with SingleTickerProviderStateMixin {
               ),
             Column(
               crossAxisAlignment: CrossAxisAlignment.center,
+              mainAxisSize: widget.stretch ? MainAxisSize.max : MainAxisSize.min,
               children: [
                 const SizedBox(width: double.infinity),
                 // the icon sits in a round, tinted well
@@ -193,7 +207,11 @@ class _CardState extends State<_Card> with SingleTickerProviderStateMixin {
                     child: Text(v.evo, textAlign: TextAlign.center, style: Nf.ui(size: Nf.fsXs, height: 1.45, color: Nf.gold)),
                   ),
                 ],
-                if (!widget.touch && !widget.locked) ...[const SizedBox(height: Nf.s3), Kbd('${widget.index + 1}')],
+                if (!widget.touch && !widget.locked) ...[
+                  if (widget.stretch) const Spacer(),
+                  const SizedBox(height: Nf.s3),
+                  Kbd('${widget.index + 1}'),
+                ],
               ],
             ),
           ],
@@ -232,6 +250,32 @@ class _CardState extends State<_Card> with SingleTickerProviderStateMixin {
       onShowFocusHighlight: (v) => setState(() => _focus = v),
       actions: {ActivateIntent: CallbackAction<ActivateIntent>(onInvoke: (_) => widget.onTap?.call())},
       child: GestureDetector(onTap: widget.onTap, child: anim),
+    );
+  }
+}
+
+/// One row of equal-height cards when they fit side by side (like the
+/// original flex row); otherwise they wrap and keep their own heights.
+class _CardRow extends StatelessWidget {
+  final List<Widget> cards;
+  const _CardRow({required this.cards});
+
+  @override
+  Widget build(BuildContext context) {
+    const cardW = 232.0;
+    final fits = cards.length * cardW + (cards.length - 1) * Nf.s4 <= MediaQuery.sizeOf(context).width - Nf.s4 * 2;
+    if (!fits) return Wrap(alignment: WrapAlignment.center, spacing: Nf.s4, runSpacing: Nf.s4, children: cards);
+    return IntrinsicHeight(
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          for (var i = 0; i < cards.length; i++) ...[
+            if (i > 0) const SizedBox(width: Nf.s4),
+            cards[i] is _Card ? (cards[i] as _Card).stretched() : cards[i],
+          ],
+        ],
+      ),
     );
   }
 }

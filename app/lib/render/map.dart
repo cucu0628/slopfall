@@ -43,7 +43,8 @@ const Map<String, String> minimapRgb = {
   'ruins': '#3a3b45',
 };
 
-const int _maxCached = 48;
+/// GPU memory budget for cached ground chunks, in 512×512 (1×) chunks.
+const int _cacheBudget = 48;
 const int _maxNewPerFrame = 2;
 
 int _chunkKey(int cx, int cy) => (cx + 32768) * 65536 + (cy + 32768);
@@ -61,12 +62,13 @@ class WorldRenderer {
   // insertion order = LRU order
   final LinkedHashMap<int, Image2D> _ground = LinkedHashMap();
   int _seed = -1;
+  double _res = 1; // pixels per world unit of the cached ground
   Gradient2D? _vignette;
   String _vigSize = '';
 
   // -------------------------------------------------------------- ground
 
-  Image2D _renderChunk(int seed, int cx, int cy) {
+  Image2D _renderChunk(int seed, int cx, int cy, double res) {
     final ox = cx * _chunk, oy = cy * _chunk;
     final chunk = getChunk(seed, cx, cy);
 
@@ -87,8 +89,11 @@ class WorldRenderer {
     }
     final low = imageFromPixels(n, n, px);
 
-    final img = offscreen(_chunk, _chunk, (g) {
+    final px2 = (_chunk * res).round();
+    final img = offscreen(px2, px2, (g) {
+      g.scale(res, res);
       g.imageSmoothingEnabled = true;
+      g.imageSmoothingQuality = 'high';
       g.drawImage(low, -_fieldStep / 2, -_fieldStep / 2, n * _fieldStep, n * _fieldStep);
 
       // Soft detail blobs on a global grid, coloured by the biome at their
@@ -208,14 +213,21 @@ class WorldRenderer {
     }
   }
 
-  void drawGround(Ctx2D ctx, int seed, double minX, double minY, double maxX, double maxY) {
-    if (seed != _seed) {
+  /// [pixelScale] is screen pixels per world unit (view scale × device pixel ratio).
+  void drawGround(Ctx2D ctx, int seed, double minX, double minY, double maxX, double maxY, double pixelScale) {
+    // cache the ground at (about) the resolution it is shown at, up to 2×
+    final res = (pixelScale * 2).ceil().clamp(2, 4) / 2;
+    if (seed != _seed || res != _res) {
       for (final img in _ground.values) {
         img.dispose();
       }
       _ground.clear();
       _seed = seed;
+      _res = res;
     }
+    final visible = (((maxX - minX) / _chunk).ceil() + 1) * (((maxY - minY) / _chunk).ceil() + 1);
+    final maxCached = math.max(visible + 8, _cacheBudget ~/ (res * res));
+    ctx.imageSmoothingQuality = 'high';
     var created = 0;
     for (var cx = (minX / _chunk).floor(); cx * _chunk < maxX; cx++) {
       for (var cy = (minY / _chunk).floor(); cy * _chunk < maxY; cy++) {
@@ -225,9 +237,11 @@ class WorldRenderer {
           _ground[key] = c; // refresh LRU order
         } else if (created < _maxNewPerFrame) {
           created++;
-          c = _renderChunk(seed, cx, cy);
+          c = _renderChunk(seed, cx, cy, res);
           _ground[key] = c;
-          if (_ground.length > _maxCached) _ground.remove(_ground.keys.first)?.dispose();
+          while (_ground.length > maxCached) {
+            _ground.remove(_ground.keys.first)?.dispose();
+          }
         }
         if (c != null) {
           ctx.drawImage(c, cx * _chunk, cy * _chunk, _chunk + 0.5, _chunk + 0.5);
@@ -237,6 +251,7 @@ class WorldRenderer {
         }
       }
     }
+    ctx.imageSmoothingQuality = 'medium';
   }
 
   // -------------------------------------------------------------- obstacles

@@ -3,6 +3,7 @@
 // avoid raw sizes or colours elsewhere.
 
 import 'dart:math' as math;
+import 'dart:ui' as ui;
 
 import 'package:flutter/material.dart';
 
@@ -121,7 +122,9 @@ class Panel extends StatelessWidget {
               borderRadius: BorderRadius.circular(Nf.rLg),
               border: Border(top: BorderSide(color: Nf.mix(a, 0.65), width: 2)),
             ),
+      // passthrough: a panel stretched by its parent (grid rows) passes the height on
       child: Stack(
+        fit: StackFit.passthrough,
         children: [
           if (a != null)
             Positioned.fill(
@@ -347,7 +350,7 @@ class ScreenLayer extends StatelessWidget {
     final bg = overlay
         ? const RadialGradient(radius: 0.9, colors: [Color.fromRGBO(5, 7, 15, 0.7), Color.fromRGBO(5, 7, 15, 0.9)])
         : const RadialGradient(radius: 0.9, colors: [Color.fromRGBO(11, 13, 23, 0.55), Color.fromRGBO(11, 13, 23, 0.92)]);
-    return DecoratedBox(
+    final layer = DecoratedBox(
       decoration: BoxDecoration(gradient: bg),
       child: SafeArea(
         child: Stack(
@@ -376,5 +379,8 @@ class ScreenLayer extends StatelessWidget {
         ),
       ),
     );
+    if (!overlay) return layer;
+    // overlays blur the running game behind them
+    return ClipRect(child: BackdropFilter(filter: ui.ImageFilter.blur(sigmaX: 3, sigmaY: 3), child: layer));
   }
 }

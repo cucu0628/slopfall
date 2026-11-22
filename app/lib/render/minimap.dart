@@ -64,6 +64,7 @@ class Minimap {
     // terrain
     const half = _range + _margin;
     ctx.imageSmoothingEnabled = true;
+    ctx.imageSmoothingQuality = 'high';
     ctx.globalAlpha = 0.9;
     final (tx0, ty0) = map(_tx - half, _ty - half);
     ctx.drawImage(_terrain!, tx0, ty0, half * 2 * k, half * 2 * k);

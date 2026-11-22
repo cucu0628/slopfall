@@ -28,16 +28,18 @@ Future<void> loadFonts() async {
   }
 }
 
-Future<void> snap(Session s, double w, double h, String path) async {
+Future<void> snap(Session s, double w, double h, String path, [double dpr = 1]) async {
   final rec = ui.PictureRecorder();
-  final canvas = ui.Canvas(rec);
-  s.renderer.resize(w, h);
+  final canvas = ui.Canvas(rec)..scale(dpr);
+  s.renderer
+    ..resize(w, h)
+    ..dpr = dpr;
   // ground chunks are created two per frame: warm the cache first
   for (var i = 0; i < 12; i++) {
     s.paint(ui.Canvas(ui.PictureRecorder()));
   }
   s.paint(canvas);
-  final img = await rec.endRecording().toImage(w.toInt(), h.toInt());
+  final img = await rec.endRecording().toImage((w * dpr).toInt(), (h * dpr).toInt());
   final png = await img.toByteData(format: ui.ImageByteFormat.png);
   File(path).writeAsBytesSync(png!.buffer.asUint8List());
 }
@@ -66,6 +68,7 @@ void main() {
         }
         if (dir != null) await snap(s, 1280, 720, '$dir/$name.png');
         if (dir != null && name == 'mage') await snap(s, 390, 844, '$dir/${name}_portrait.png');
+        if (dir != null && name == 'mage') await snap(s, 960, 540, '$dir/${name}_hidpi.png', 2);
         expect(s.state.tick, greaterThan(0));
       }
     });

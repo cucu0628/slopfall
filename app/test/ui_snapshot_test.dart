@@ -3,6 +3,7 @@
 import 'dart:io';
 import 'dart:ui' as ui;
 
+import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
 import 'package:flutter/services.dart';
@@ -40,6 +41,7 @@ void main() {
     final storage = await tester.runAsync(RunStorage.open);
     for (final size in [const Size(1280, 720), const Size(390, 844)]) {
       final tag = size.width > size.height ? 'wide' : 'phone';
+      final kind = tag == 'wide' ? PointerDeviceKind.mouse : PointerDeviceKind.touch;
       await tester.binding.setSurfaceSize(size);
       tester.view.physicalSize = size;
       tester.view.devicePixelRatio = 1;
@@ -47,11 +49,11 @@ void main() {
       await frames(tester, 60);
       await shot(tester, '${tag}_menu');
 
-      await tester.tap(find.text('NEW RUN'));
+      await tester.tap(find.text('NEW RUN'), kind: kind);
       await frames(tester);
       await shot(tester, '${tag}_chars');
 
-      await tester.tap(find.text('Mage'));
+      await tester.tap(find.text('Mage'), kind: kind);
       await frames(tester, 240);
       await shot(tester, '${tag}_game');
 
@@ -75,14 +77,14 @@ void main() {
       await frames(tester, 140);
       await shot(tester, '${tag}_over');
 
-      await tester.tap(find.text('MAIN MENU'));
+      await tester.tap(find.text('MAIN MENU'), kind: kind);
       await frames(tester, 20);
       await tester.runAsync(() => codexPortraitBytes('bat'));
-      await tester.tap(find.text('CODEX'));
+      await tester.tap(find.text('CODEX'), kind: kind);
       await tester.runAsync(() => Future<void>.delayed(const Duration(seconds: 3)));
       await frames(tester, 20);
       await shot(tester, '${tag}_codex');
-      await tester.tap(find.text('BACK'), warnIfMissed: false);
+      await tester.tap(find.text('BACK'), kind: kind, warnIfMissed: false);
       await frames(tester, 20);
       await tester.pumpWidget(const SizedBox());
       await frames(tester, 5);

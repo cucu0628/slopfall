@@ -40,6 +40,9 @@ class Renderer {
   final WorldRenderer _world = WorldRenderer();
   final Minimap minimap = Minimap();
 
+  /// Device pixels per logical pixel (set by the game view).
+  double dpr = 1;
+
   /// Phones/tablets: HUD laid out around the touch controls.
   bool touchMode = false;
 
@@ -77,7 +80,7 @@ class Renderer {
     bool vis(double x, double y, [double m = 0]) => x > minX - m && x < maxX + m && y > minY - m && y < maxY + m;
 
     final seed = s.mapSeed;
-    _world.drawGround(ctx, seed, minX, minY, maxX, maxY);
+    _world.drawGround(ctx, seed, minX, minY, maxX, maxY, scale * dpr);
 
     // ground telegraphs
     for (final hz in s.hazards) {

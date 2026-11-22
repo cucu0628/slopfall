@@ -11,13 +11,14 @@ Color rgba(String hex, num a) => withAlpha(hex, a.toDouble());
 
 Image2D _glowSprite(String color) {
   return _cache.putIfAbsent(color, () {
-    return offscreen(64, 64, (g) {
-      final grad = g.createRadialGradient(32, 32, 0, 32, 32, 32);
+    // 128 px so large glows (torches, bosses) stay smooth when scaled up
+    return offscreen(128, 128, (g) {
+      final grad = g.createRadialGradient(64, 64, 0, 64, 64, 64);
       grad.addColorStop(0, rgba(color, 0.85));
       grad.addColorStop(0.3, rgba(color, 0.35));
       grad.addColorStop(1, rgba(color, 0));
       g.fillStyle = grad;
-      g.fillRect(0, 0, 64, 64);
+      g.fillRect(0, 0, 128, 128);
     });
   });
 }
