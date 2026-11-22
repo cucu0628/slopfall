@@ -1,8 +1,5 @@
 #include "flutter_window.h"
 
-#include <flutter/method_channel.h>
-#include <flutter/standard_method_codec.h>
-
 #include <optional>
 
 #include "flutter/generated_plugin_registrant.h"
@@ -29,23 +26,6 @@ bool FlutterWindow::OnCreate() {
   }
   RegisterPlugins(flutter_controller_->engine());
 
-  // nightfall/window: toggleFullscreen (F11)
-  window_channel_ =
-      std::make_unique<flutter::MethodChannel<flutter::EncodableValue>>(
-          flutter_controller_->engine()->messenger(), "nightfall/window",
-          &flutter::StandardMethodCodec::GetInstance());
-  window_channel_->SetMethodCallHandler(
-      [this](const flutter::MethodCall<flutter::EncodableValue>& call,
-             std::unique_ptr<flutter::MethodResult<flutter::EncodableValue>>
-                 result) {
-        if (call.method_name() == "toggleFullscreen") {
-          ToggleFullscreen();
-          result->Success();
-        } else {
-          result->NotImplemented();
-        }
-      });
-
   SetChildContent(flutter_controller_->view()->GetNativeWindow());
 
   flutter_controller_->engine()->SetNextFrameCallback([&]() {
@@ -60,33 +40,7 @@ bool FlutterWindow::OnCreate() {
   return true;
 }
 
-void FlutterWindow::ToggleFullscreen() {
-  HWND hwnd = GetHandle();
-  LONG style = ::GetWindowLong(hwnd, GWL_STYLE);
-  if (!fullscreen_) {
-    MONITORINFO mi = {sizeof(mi)};
-    if (::GetWindowPlacement(hwnd, &placement_) &&
-        ::GetMonitorInfo(::MonitorFromWindow(hwnd, MONITOR_DEFAULTTOPRIMARY),
-                         &mi)) {
-      ::SetWindowLong(hwnd, GWL_STYLE, style & ~WS_OVERLAPPEDWINDOW);
-      ::SetWindowPos(hwnd, HWND_TOP, mi.rcMonitor.left, mi.rcMonitor.top,
-                     mi.rcMonitor.right - mi.rcMonitor.left,
-                     mi.rcMonitor.bottom - mi.rcMonitor.top,
-                     SWP_NOOWNERZORDER | SWP_FRAMECHANGED);
-      fullscreen_ = true;
-    }
-  } else {
-    ::SetWindowLong(hwnd, GWL_STYLE, style | WS_OVERLAPPEDWINDOW);
-    ::SetWindowPlacement(hwnd, &placement_);
-    ::SetWindowPos(hwnd, nullptr, 0, 0, 0, 0,
-                   SWP_NOMOVE | SWP_NOSIZE | SWP_NOZORDER |
-                       SWP_NOOWNERZORDER | SWP_FRAMECHANGED);
-    fullscreen_ = false;
-  }
-}
-
 void FlutterWindow::OnDestroy() {
-  window_channel_ = nullptr;
   if (flutter_controller_) {
     flutter_controller_ = nullptr;
   }
@@ -112,14 +66,6 @@ FlutterWindow::MessageHandler(HWND hwnd, UINT const message,
     case WM_FONTCHANGE:
       flutter_controller_->engine()->ReloadSystemFonts();
       break;
-    case WM_GETMINMAXINFO: {
-      // smaller windows squeeze the HUD and menus too much
-      auto* info = reinterpret_cast<MINMAXINFO*>(lparam);
-      UINT dpi = ::GetDpiForWindow(hwnd);
-      info->ptMinTrackSize.x = ::MulDiv(640, dpi, 96);
-      info->ptMinTrackSize.y = ::MulDiv(400, dpi, 96);
-      return 0;
-    }
   }
 
   return Win32Window::MessageHandler(hwnd, message, wparam, lparam);

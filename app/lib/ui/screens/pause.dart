@@ -18,22 +18,26 @@ class PauseScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final p = player, st = p.stats;
-    final rows = <(String, String)>[
+    // two meaningful groups instead of one 15-row list, so the pause screen
+    // fits a 720 px tall window without scrolling
+    final survival = <(String, String)>[
       ('Max HP', '${roundInt(st.maxHp)}'),
       ('Regeneration', '${st.regen.toStringAsFixed(1)}/s'),
       ('Armor', jsNum(st.armor)),
       ('Damage taken', '-${roundInt(st.dr * 100)}%'),
       ('Lifesteal', '${(st.lifesteal * 100).toStringAsFixed(1)}%'),
-      ('Ignite chance', '${roundInt(st.burn * 100)}%'),
+      ('Move speed', '${roundInt(st.speed)}'),
+      ('Pickup range', '${roundInt(st.magnet)}'),
+      ('Growth', pct(st.growth - 1)),
+    ];
+    final offense = <(String, String)>[
       ('Might', pct(st.might - 1)),
       ('Cooldown', pct(st.cooldown - 1)),
       ('Area', pct(st.area - 1)),
       ('Duration', pct(st.duration - 1)),
       ('Amount', '+${jsNum(st.amount)}'),
       ('Crit chance', '${roundInt(st.crit * 100)}%'),
-      ('Move speed', '${roundInt(st.speed)}'),
-      ('Pickup range', '${roundInt(st.magnet)}'),
-      ('Growth', pct(st.growth - 1)),
+      ('Ignite chance', '${roundInt(st.burn * 100)}%'),
     ];
     final c = characterDefs[p.charId]!;
     final arsenal = <(String, String, String, String, bool)>[
@@ -42,49 +46,74 @@ class PauseScreen extends StatelessWidget {
       for (final k in p.perks) (perkDefs[k.id]!.icon, perkDefs[k.id]!.color, perkDefs[k.id]!.name, 'Lv ${k.level}/${perkDefs[k.id]!.max}', false),
       for (final e in p.bonus.entries) (bonusDefs[e.key]!.icon, bonusDefs[e.key]!.color, bonusDefs[e.key]!.name, '×${e.value}', false),
     ];
-    final narrow = MediaQuery.sizeOf(context).width < 620;
-    final stats = SizedBox(
-      width: 240,
-      child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-        const NfLabel('Stats'),
-        const SizedBox(height: Nf.s3),
-        StatTable(rows: [for (final (k, v) in rows) (Text(k, style: Nf.ui(size: Nf.fsSm)), v)]),
-      ]),
-    );
+    final width = MediaQuery.sizeOf(context).width;
+    Widget group(String title, List<(String, String)> rows, double w) => SizedBox(
+          width: w,
+          child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+            NfLabel(title),
+            const SizedBox(height: Nf.s2),
+            StatTable(rows: [for (final (k, v) in rows) (Text(k, style: Nf.ui(size: Nf.fsSm, color: Nf.muted)), v)]),
+          ]),
+        );
+    Widget item((String, String, String, String, bool) a, {bool rule = true}) => Container(
+          padding: const EdgeInsets.symmetric(vertical: 5, horizontal: Nf.s1),
+          decoration: BoxDecoration(border: rule ? const Border(top: BorderSide(color: Nf.lineFaint)) : null),
+          child: Row(children: [
+            SizedBox(width: 22, height: 20, child: Center(child: IconGlyph(a.$1, size: 16, color: cssColor(a.$2)))),
+            const SizedBox(width: Nf.s2),
+            Expanded(child: Text(a.$3, overflow: TextOverflow.ellipsis, style: Nf.ui(size: Nf.fsSm, color: a.$5 ? Nf.gold : Nf.text))),
+            Text(a.$4, style: Nf.ui(size: Nf.fsSm, color: Nf.muted)),
+          ]),
+        );
     final ars = SizedBox(
-      width: 240,
+      width: 250,
       child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
         const NfLabel('Arsenal'),
-        const SizedBox(height: Nf.s3),
-        for (var i = 0; i < arsenal.length; i++)
-          Container(
-            padding: const EdgeInsets.symmetric(vertical: 5, horizontal: Nf.s1),
-            decoration: BoxDecoration(border: i > 0 ? const Border(top: BorderSide(color: Nf.lineFaint)) : null),
-            child: Row(children: [
-              SizedBox(width: 22, height: 20, child: Center(child: IconGlyph(arsenal[i].$1, size: 16, color: cssColor(arsenal[i].$2)))),
-              const SizedBox(width: Nf.s2),
-              Expanded(child: Text(arsenal[i].$3, style: Nf.ui(size: Nf.fsSm, color: arsenal[i].$5 ? Nf.gold : Nf.text))),
-              Text(arsenal[i].$4, style: Nf.ui(size: Nf.fsSm, color: Nf.muted)),
-            ]),
-          ),
+        const SizedBox(height: Nf.s2),
+        for (var i = 0; i < arsenal.length; i++) item(arsenal[i], rule: i > 0),
       ]),
     );
+    final Widget body;
+    if (width >= 900) {
+      body = Row(mainAxisSize: MainAxisSize.min, crossAxisAlignment: CrossAxisAlignment.start, children: [
+        ars,
+        Container(width: 1, height: 280, margin: const EdgeInsets.symmetric(horizontal: Nf.s5), color: Nf.lineFaint),
+        group('Survival', survival, 196),
+        const SizedBox(width: Nf.s5),
+        group('Offense', offense, 196),
+      ]);
+    } else if (width >= 620) {
+      body = Column(mainAxisSize: MainAxisSize.min, crossAxisAlignment: CrossAxisAlignment.start, children: [
+        Row(mainAxisSize: MainAxisSize.min, crossAxisAlignment: CrossAxisAlignment.start, children: [
+          group('Survival', survival, 220),
+          const SizedBox(width: Nf.s5),
+          group('Offense', offense, 220),
+        ]),
+        const SizedBox(height: Nf.s5),
+        ars,
+      ]);
+    } else {
+      final w = (width - Nf.s4 * 2 - Nf.s5 * 2).clamp(200.0, 320.0);
+      body = Column(mainAxisSize: MainAxisSize.min, crossAxisAlignment: CrossAxisAlignment.start, children: [
+        SizedBox(width: w, child: ars),
+        const SizedBox(height: Nf.s5),
+        group('Survival', survival, w),
+        const SizedBox(height: Nf.s5),
+        group('Offense', offense, w),
+      ]);
+    }
+    final actions = Wrap(spacing: Nf.s3, runSpacing: Nf.s3, alignment: WrapAlignment.center, children: [
+      NfButton('Resume', kind: BtnKind.primary, onPressed: onResume, minWidth: 170, autofocus: true),
+      NfButton('Quit to menu', onPressed: onQuit, minWidth: 170),
+    ]);
+    final panel = Panel(padding: const EdgeInsets.all(Nf.s5), child: body);
     return ScreenLayer(
       overlay: true,
-      children: [
-        const ScreenTitle('Paused'),
-        Panel(
-          padding: const EdgeInsets.all(Nf.s5),
-          child: narrow
-              ? Column(children: [stats, const SizedBox(height: Nf.s5), ars])
-              : Row(mainAxisSize: MainAxisSize.min, crossAxisAlignment: CrossAxisAlignment.start, children: [stats, const SizedBox(width: Nf.s6), ars]),
-        ),
-        volume,
-        Wrap(spacing: Nf.s3, runSpacing: Nf.s3, alignment: WrapAlignment.center, children: [
-          NfButton('Resume', kind: BtnKind.primary, onPressed: onResume, minWidth: 170, autofocus: true),
-          NfButton('Quit to menu', onPressed: onQuit, minWidth: 170),
-        ]),
-      ],
+      gap: Nf.s4,
+      // phones: Resume first, within thumb reach; the stats scroll below
+      children: width < 620
+          ? [const ScreenTitle('Paused'), actions, volume, panel]
+          : [const ScreenTitle('Paused'), panel, volume, actions],
     );
   }
 }

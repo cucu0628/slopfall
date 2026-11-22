@@ -349,7 +349,9 @@ class ScreenLayer extends StatelessWidget {
   Widget build(BuildContext context) {
     final bg = overlay
         ? const RadialGradient(radius: 0.9, colors: [Color.fromRGBO(5, 7, 15, 0.7), Color.fromRGBO(5, 7, 15, 0.9)])
-        : const RadialGradient(radius: 0.9, colors: [Color.fromRGBO(11, 13, 23, 0.55), Color.fromRGBO(11, 13, 23, 0.92)]);
+        // menus: dark behind the centred text, lighter towards the edges so
+        // the live demo run shows around them
+        : const RadialGradient(radius: 0.85, colors: [Color.fromRGBO(11, 13, 23, 0.78), Color.fromRGBO(11, 13, 23, 0.5)]);
     final layer = DecoratedBox(
       decoration: BoxDecoration(gradient: bg),
       child: SafeArea(

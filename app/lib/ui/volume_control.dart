@@ -21,7 +21,7 @@ class VolumeControl extends StatelessWidget {
       child: Row(
         children: [
           Tooltip(
-            message: silent ? 'Unmute (M)' : 'Mute (M)',
+            message: silent ? 'Sound on (M)' : 'Mute (M)',
             child: IconButton(
               onPressed: onToggleMute,
               icon: Icon(icon, color: silent ? Nf.faint : Nf.text, size: 22),
@@ -31,8 +31,6 @@ class VolumeControl extends StatelessWidget {
               ),
             ),
           ),
-          const SizedBox(width: Nf.s2),
-          const NfLabel('Volume'),
           Expanded(
             child: SliderTheme(
               data: SliderTheme.of(context).copyWith(
@@ -46,7 +44,7 @@ class VolumeControl extends StatelessWidget {
               child: Slider(
                 value: volume,
                 onChanged: onChanged,
-                semanticFormatterCallback: (v) => '${(v * 100).round()} %',
+                semanticFormatterCallback: (v) => 'Volume ${(v * 100).round()} %',
               ),
             ),
           ),

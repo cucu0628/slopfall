@@ -2,14 +2,37 @@ import 'dart:io';
 
 import 'package:flutter/services.dart';
 import 'package:wakelock_plus/wakelock_plus.dart';
+import 'package:window_manager/window_manager.dart';
 
-const _channel = MethodChannel('nightfall/window');
+bool get _desktop => Platform.isLinux || Platform.isWindows;
 
-/// Desktop: toggles fullscreen (the runners implement it). Mobile is always fullscreen.
-Future<void> toggleFullscreen() async {
-  if (!(Platform.isLinux || Platform.isWindows)) return;
+/// Desktop: the game draws its own title bar (ui/window_frame.dart). Returns
+/// whether it should be shown.
+Future<bool> initDesktopWindow() async {
+  if (!_desktop) return false;
   try {
-    await _channel.invokeMethod<void>('toggleFullscreen');
+    await windowManager.ensureInitialized();
+    const options = WindowOptions(
+      title: 'Nightfall Survivors',
+      minimumSize: Size(640, 400),
+      backgroundColor: Color(0xff0b0d17),
+      titleBarStyle: TitleBarStyle.hidden,
+    );
+    await windowManager.waitUntilReadyToShow(options, () async {
+      await windowManager.show();
+      await windowManager.focus();
+    });
+    return true;
+  } catch (_) {
+    return false; // keep the system title bar
+  }
+}
+
+/// Desktop: toggles fullscreen. Mobile is always fullscreen.
+Future<void> toggleFullscreen() async {
+  if (!_desktop) return;
+  try {
+    await windowManager.setFullScreen(!await windowManager.isFullScreen());
   } catch (_) {}
 }
 

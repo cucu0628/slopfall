@@ -2,9 +2,7 @@
 #define RUNNER_FLUTTER_WINDOW_H_
 
 #include <flutter/dart_project.h>
-#include <flutter/encodable_value.h>
 #include <flutter/flutter_view_controller.h>
-#include <flutter/method_channel.h>
 
 #include <memory>
 
@@ -30,13 +28,6 @@ class FlutterWindow : public Win32Window {
 
   // The Flutter instance hosted by this window.
   std::unique_ptr<flutter::FlutterViewController> flutter_controller_;
-
-  // F11 fullscreen, requested from Dart over "nightfall/window".
-  void ToggleFullscreen();
-  std::unique_ptr<flutter::MethodChannel<flutter::EncodableValue>>
-      window_channel_;
-  bool fullscreen_ = false;
-  WINDOWPLACEMENT placement_ = {sizeof(WINDOWPLACEMENT)};
 };
 
 #endif  // RUNNER_FLUTTER_WINDOW_H_

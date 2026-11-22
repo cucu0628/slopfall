@@ -42,13 +42,20 @@ void main() {
     await tester.runAsync(warmUpIconGlyphs);
     SharedPreferences.setMockInitialValues({});
     final storage = await tester.runAsync(RunStorage.open);
+    // the desktop title bar talks to window_manager: answer like a normal window
+    tester.binding.defaultBinaryMessenger.setMockMethodCallHandler(const MethodChannel('window_manager'), (call) async {
+      return switch (call.method) {
+        'isMaximized' || 'isFullScreen' => false,
+        _ => null,
+      };
+    });
     for (final size in [const Size(1280, 720), const Size(390, 844)]) {
       final tag = size.width > size.height ? 'wide' : 'phone';
       final kind = tag == 'wide' ? PointerDeviceKind.mouse : PointerDeviceKind.touch;
       await tester.binding.setSurfaceSize(size);
       tester.view.physicalSize = size;
       tester.view.devicePixelRatio = 1;
-      await tester.pumpWidget(RepaintBoundary(key: _key, child: NightfallApp(storage: storage!, settings: Settings(storage.store), audio: false)));
+      await tester.pumpWidget(RepaintBoundary(key: _key, child: NightfallApp(storage: storage!, settings: Settings(storage.store), audio: false, windowFrame: tag == 'wide')));
       await frames(tester, 60);
       await shot(tester, '${tag}_menu');
 

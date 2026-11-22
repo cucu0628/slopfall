@@ -3,6 +3,9 @@ import 'dart:js_interop';
 import 'package:wakelock_plus/wakelock_plus.dart';
 import 'package:web/web.dart' as web;
 
+/// The browser draws the window: no title bar of our own.
+Future<bool> initDesktopWindow() async => false;
+
 Future<void> toggleFullscreen() async {
   try {
     if (web.document.fullscreenElement != null) {

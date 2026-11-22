@@ -27,6 +27,7 @@ import 'ui/screens/pause.dart';
 import 'ui/theme.dart';
 import 'ui/touch_controls.dart';
 import 'ui/volume_control.dart';
+import 'ui/window_frame.dart';
 
 const double _saveEvery = 5; // game seconds
 
@@ -36,7 +37,9 @@ class NightfallApp extends StatelessWidget {
   final RunStorage storage;
   final Settings settings;
   final bool audio;
-  const NightfallApp({super.key, required this.storage, required this.settings, this.audio = true});
+  /// Linux / Windows: draw our own title bar (the system one is hidden).
+  final bool windowFrame;
+  const NightfallApp({super.key, required this.storage, required this.settings, this.audio = true, this.windowFrame = false});
 
   @override
   Widget build(BuildContext context) => MaterialApp(
@@ -44,6 +47,7 @@ class NightfallApp extends StatelessWidget {
         debugShowCheckedModeBanner: false,
         theme: nightfallTheme(),
         home: GameShell(storage: storage, settings: settings, audio: audio),
+        builder: windowFrame ? (context, child) => WindowFrame(child: child!) : null,
       );
 }
 
