@@ -1,0 +1,11 @@
+name: nightfall_sim
+description: Deterministic simulation (game rules) of Nightfall Survivors. Pure Dart, no Flutter.
+publish_to: none
+version: 0.1.0
+
+environment:
+  sdk: ^3.9.0
+
+dev_dependencies:
+  lints: ^6.0.0
+  test: ^1.26.0
