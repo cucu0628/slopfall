@@ -100,6 +100,10 @@ static void my_application_activate(GApplication* application) {
   g_autoptr(FlDartProject) project = fl_dart_project_new();
   fl_dart_project_set_dart_entrypoint_arguments(
       project, self->dart_entrypoint_arguments);
+  // Skia draws paths with analytic anti-aliasing, like the browser the game
+  // was designed in; Impeller's MSAA leaves the thin outlines of the small
+  // character figures slightly jagged.
+  fl_dart_project_set_enable_impeller(project, FALSE);
 
   FlView* view = fl_view_new(project);
   GdkRGBA background_color;
