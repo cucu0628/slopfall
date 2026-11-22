@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:nightfall_sim/nightfall_sim.dart';
 
 import '../../render/canvas2d.dart' show cssColor;
+import '../icon_glyph.dart';
 import '../theme.dart';
 
 String pct(double v) => '${v >= 0 ? '+' : ''}${roundInt(v * 100)}%';
@@ -60,7 +61,7 @@ class PauseScreen extends StatelessWidget {
             padding: const EdgeInsets.symmetric(vertical: 5, horizontal: Nf.s1),
             decoration: BoxDecoration(border: i > 0 ? const Border(top: BorderSide(color: Nf.lineFaint)) : null),
             child: Row(children: [
-              SizedBox(width: 22, child: Text(arsenal[i].$1, textAlign: TextAlign.center, style: Nf.ui(size: 16, color: cssColor(arsenal[i].$2)))),
+              SizedBox(width: 22, height: 20, child: Center(child: IconGlyph(arsenal[i].$1, size: 16, color: cssColor(arsenal[i].$2)))),
               const SizedBox(width: Nf.s2),
               Expanded(child: Text(arsenal[i].$3, style: Nf.ui(size: Nf.fsSm, color: arsenal[i].$5 ? Nf.gold : Nf.text))),
               Text(arsenal[i].$4, style: Nf.ui(size: Nf.fsSm, color: Nf.muted)),

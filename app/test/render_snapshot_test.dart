@@ -9,6 +9,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:nightfall/game/input.dart';
 import 'package:nightfall/game/session.dart';
 import 'package:nightfall/game/touch.dart';
+import 'package:nightfall/render/glyphs.dart';
 import 'package:nightfall/render/renderer.dart';
 import 'package:nightfall_sim/nightfall_sim.dart';
 
@@ -52,6 +53,7 @@ void main() {
   testWidgets('renders gameplay', (tester) async {
     await tester.runAsync(() async {
       await loadFonts();
+      await warmUpIconGlyphs();
       for (final (name, charId, seconds, wave) in [('knight', 'knight', 20.0, 3), ('mage', 'mage', 12.0, 5), ('necro', 'necro', 14.0, 20)]) {
         final r = Renderer()..resize(1280, 720);
         final s = Session(charId, r, input: Input(TouchState()), initial: createGame(11 + wave, [PlayerSetup(localId, charId)], godMode: true));

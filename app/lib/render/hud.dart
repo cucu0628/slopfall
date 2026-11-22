@@ -1,9 +1,11 @@
 import 'dart:math' as math;
+import 'dart:ui' show Offset;
 
 import 'package:nightfall_sim/nightfall_sim.dart';
 
 import 'canvas2d.dart';
 import 'effects.dart';
+import 'glyphs.dart';
 import 'renderer.dart';
 import 'sprites.dart';
 
@@ -130,10 +132,7 @@ void _slot(Ctx2D ctx, double x, double y, double size, String icon, String color
   ctx.strokeStyle = evolved ? cssColor('#ffd166') : rgba(color, 0.7);
   ctx.lineWidth = evolved ? 2.5 : 1.5;
   ctx.strokeRect(x + 0.5, y + 0.5, size - 1, size - 1);
-  ctx.font = 'bold ${jsNum(size * 0.55)}px $_font';
-  ctx.textAlign = 'center';
-  ctx.fillStyle = color;
-  ctx.fillText(icon, x + size / 2, y + size * 0.62);
+  paintGlyph(ctx.canvas, icon, Offset(x + size / 2, y + size / 2), size * 0.55, cssColor(color));
   ctx.font = 'bold ${jsNum(size * 0.3)}px $_font';
   ctx.textAlign = 'right';
   ctx.fillStyle = level >= max ? '#ffd166' : '#ffffff';

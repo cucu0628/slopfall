@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:nightfall_sim/nightfall_sim.dart';
 
 import '../../render/canvas2d.dart' show cssColor;
+import '../icon_glyph.dart';
 import '../theme.dart';
 
 class OptionView {
@@ -185,7 +186,7 @@ class _CardState extends State<_Card> with SingleTickerProviderStateMixin {
                     border: Border.all(color: Nf.mix(c, 0.35)),
                     gradient: RadialGradient(center: const Alignment(0, -0.2), radius: 0.7, colors: [Nf.mix(c, 0.26), c.withValues(alpha: 0)]),
                   ),
-                  child: Text(v.icon, style: Nf.ui(size: 34, color: c, height: 1).copyWith(shadows: [Shadow(color: c, blurRadius: 14)])),
+                  child: IconGlyph(v.icon, size: 34, color: c, shadows: [Shadow(color: c, blurRadius: 14)]),
                 ),
                 const SizedBox(height: Nf.s2),
                 Text(v.name, textAlign: TextAlign.center, style: Nf.display(size: Nf.fsLg)),

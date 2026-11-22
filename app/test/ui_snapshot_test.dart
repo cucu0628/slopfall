@@ -11,6 +11,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:nightfall/app.dart';
 import 'package:nightfall/storage/run_storage.dart';
 import 'package:nightfall/storage/settings.dart';
+import 'package:nightfall/ui/icon_glyph.dart';
 import 'package:nightfall/ui/screens/codex.dart' show codexPortraitBytes;
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -38,6 +39,7 @@ Future<void> frames(WidgetTester tester, [int n = 30]) async {
 void main() {
   testWidgets('every screen renders', (tester) async {
     await tester.runAsync(loadFonts);
+    await tester.runAsync(warmUpIconGlyphs);
     SharedPreferences.setMockInitialValues({});
     final storage = await tester.runAsync(RunStorage.open);
     for (final size in [const Size(1280, 720), const Size(390, 844)]) {
