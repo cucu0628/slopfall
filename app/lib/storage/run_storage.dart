@@ -17,6 +17,9 @@ class RunStorage {
 
   static Future<RunStorage> open() async => RunStorage(await KeyValueStore.open());
 
+  /// The underlying store, shared with the settings.
+  KeyValueStore get store => _kv;
+
   GameState? loadRun() {
     try {
       final raw = _kv.get(_saveKey);

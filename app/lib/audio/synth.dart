@@ -165,9 +165,42 @@ Uint8List wav(Float32List samples) {
   return data.buffer.asUint8List();
 }
 
+/// Target loudness (dB, K-weighted, see loudness.dart) of every sound. The
+/// raw recipes differ by up to 20 dB (the Mage's bolt was barely audible next
+/// to the Knight's sword), so each sound is scaled to its target: weapons
+/// share one level, very frequent sounds sit lower, big moments higher.
+const Map<String, double> soundLevels = {
+  // weapon fire: all heroes equally loud
+  'swing': -19, 'bolt': -19, 'arrow': -19, 'zap': -19, 'frost': -19, 'nova': -19, 'deploy': -19, //
+  // frequent feedback
+  'hit': -25, 'gem': -24, 'kill': -22, 'coin': -22,
+  // player actions and pickups
+  'dash': -20, 'ability': -17, 'select': -19, 'pickup': -18,
+  // events
+  'hurt': -15, 'death': -13, 'explode': -17, 'warn': -16, 'wave': -17,
+  'levelup': -16, 'chest': -16, 'victory': -16, 'boss': -14,
+};
+
 /// The game's sound effects, same recipes as the original WebAudio version.
 /// 'kill' is rendered at 300 Hz and 'gem' at 880 Hz; the player varies their
 /// pitch with the playback speed.
+/// Renders [recipe] scaled to [targetDb] loudness (peaks kept below -1 dBFS).
+Float32List renderLeveled(SoundRecipe recipe, double targetDb, double Function(Float32List s) measure) {
+  final s = recipe.render();
+  final l = measure(s);
+  if (l <= 0) return s;
+  var gain = math.pow(10, targetDb / 20) / l;
+  var peak = 0.0;
+  for (final v in s) {
+    peak = math.max(peak, v.abs());
+  }
+  if (peak * gain > 0.89) gain = 0.89 / peak;
+  for (var i = 0; i < s.length; i++) {
+    s[i] *= gain;
+  }
+  return s;
+}
+
 Map<String, SoundRecipe> soundRecipes() {
   final m = <String, SoundRecipe>{};
   SoundRecipe r(String name) => m[name] = SoundRecipe();

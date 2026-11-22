@@ -4,9 +4,10 @@ import 'package:flutter/material.dart';
 
 import 'app.dart';
 import 'storage/run_storage.dart';
+import 'storage/settings.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
   final storage = await RunStorage.open();
-  runApp(NightfallApp(storage: storage));
+  runApp(NightfallApp(storage: storage, settings: Settings(storage.store)));
 }

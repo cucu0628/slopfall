@@ -23,6 +23,8 @@ Future<void> loadFonts() async {
 
   await family('NightfallSans', ['NightfallSans-Regular.ttf', 'NightfallSans-SemiBold.ttf', 'NightfallSans-Bold.ttf', 'NightfallSans-ExtraBold.ttf', 'NightfallSans-Black.ttf']);
   await family('NightfallSerif', ['NightfallSerif-Regular.ttf', 'NightfallSerif-Italic.ttf', 'NightfallSerif-Bold.ttf']);
+  final icons = FontLoader('MaterialIcons')..addFont(rootBundle.load('fonts/MaterialIcons-Regular.otf'));
+  await icons.load();
   for (final c in ['A', 'B', 'C', 'D']) {
     await family('NightfallIcons$c', ['NightfallIcons$c.ttf']);
   }

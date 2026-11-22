@@ -11,7 +11,8 @@ String pct(double v) => '${v >= 0 ? '+' : ''}${roundInt(v * 100)}%';
 class PauseScreen extends StatelessWidget {
   final Player player;
   final VoidCallback onResume, onQuit;
-  const PauseScreen({super.key, required this.player, required this.onResume, required this.onQuit});
+  final Widget volume;
+  const PauseScreen({super.key, required this.player, required this.onResume, required this.onQuit, required this.volume});
 
   @override
   Widget build(BuildContext context) {
@@ -77,6 +78,7 @@ class PauseScreen extends StatelessWidget {
               ? Column(children: [stats, const SizedBox(height: Nf.s5), ars])
               : Row(mainAxisSize: MainAxisSize.min, crossAxisAlignment: CrossAxisAlignment.start, children: [stats, const SizedBox(width: Nf.s6), ars]),
         ),
+        volume,
         Wrap(spacing: Nf.s3, runSpacing: Nf.s3, alignment: WrapAlignment.center, children: [
           NfButton('Resume', kind: BtnKind.primary, onPressed: onResume, minWidth: 170, autofocus: true),
           NfButton('Quit to menu', onPressed: onQuit, minWidth: 170),

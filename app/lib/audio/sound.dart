@@ -8,6 +8,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter_soloud/flutter_soloud.dart';
 
 import '../game/session.dart';
+import 'loudness.dart';
 import 'synth.dart';
 
 const Map<String, double> _minGap = {
@@ -15,6 +16,7 @@ const Map<String, double> _minGap = {
   'bolt': 0.06, 'arrow': 0.05, 'zap': 0.08, 'frost': 0.1, 'hurt': 0.15,
 };
 
+/// Engine volume at 100 % (the original WebAudio master gain).
 const double _masterVolume = 0.22;
 
 class Sound implements SoundSink {
@@ -27,6 +29,10 @@ class Sound implements SoundSink {
   int _gemPitch = 0;
   double _gemChain = -1;
   bool muted = false;
+
+  /// Player volume, 0..1 (on top of the master gain).
+  double volume = 1;
+
   /// False in tests: no audio device is touched.
   final bool enabled;
 
@@ -42,9 +48,10 @@ class Sound implements SoundSink {
       final soloud = SoLoud.instance;
       if (!soloud.isInitialized) await soloud.init(bufferSize: 1024);
       soloud.setMaxActiveVoiceCount(32);
-      soloud.setGlobalVolume(muted ? 0 : _masterVolume);
+      _applyVolume();
       for (final e in soundRecipes().entries) {
-        _sources[e.key] = await soloud.loadMem('${e.key}.wav', wav(e.value.render()));
+        final pcm = renderLeveled(e.value, soundLevels[e.key] ?? -19, loudness);
+        _sources[e.key] = await soloud.loadMem('${e.key}.wav', wav(pcm));
       }
       _ready = true;
     } catch (e) {
@@ -53,9 +60,20 @@ class Sound implements SoundSink {
     }
   }
 
+  void _applyVolume() {
+    final soloud = SoLoud.instance;
+    if (soloud.isInitialized) soloud.setGlobalVolume(muted ? 0 : _masterVolume * volume * volume); // squared: feels linear
+  }
+
   void toggleMute() {
     muted = !muted;
-    if (_ready) SoLoud.instance.setGlobalVolume(muted ? 0 : _masterVolume);
+    _applyVolume();
+  }
+
+  void setVolume(double v) {
+    volume = v.clamp(0.0, 1.0);
+    if (volume > 0) muted = false;
+    _applyVolume();
   }
 
   @override

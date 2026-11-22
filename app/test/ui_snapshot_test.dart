@@ -10,6 +10,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:nightfall/app.dart';
 import 'package:nightfall/storage/run_storage.dart';
+import 'package:nightfall/storage/settings.dart';
 import 'package:nightfall/ui/screens/codex.dart' show codexPortraitBytes;
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -45,7 +46,7 @@ void main() {
       await tester.binding.setSurfaceSize(size);
       tester.view.physicalSize = size;
       tester.view.devicePixelRatio = 1;
-      await tester.pumpWidget(RepaintBoundary(key: _key, child: NightfallApp(storage: storage!, audio: false)));
+      await tester.pumpWidget(RepaintBoundary(key: _key, child: NightfallApp(storage: storage!, settings: Settings(storage.store), audio: false)));
       await frames(tester, 60);
       await shot(tester, '${tag}_menu');
 

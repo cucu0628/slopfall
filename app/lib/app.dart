@@ -16,6 +16,7 @@ import 'game/touch.dart';
 import 'platform/window.dart';
 import 'render/renderer.dart';
 import 'storage/run_storage.dart';
+import 'storage/settings.dart';
 import 'ui/game_view.dart';
 import 'ui/screens/char_select.dart';
 import 'ui/screens/codex.dart';
@@ -25,6 +26,7 @@ import 'ui/screens/main_menu.dart';
 import 'ui/screens/pause.dart';
 import 'ui/theme.dart';
 import 'ui/touch_controls.dart';
+import 'ui/volume_control.dart';
 
 const double _saveEvery = 5; // game seconds
 
@@ -32,22 +34,24 @@ enum Screen { menu, chars, codex, levelup, pause, over }
 
 class NightfallApp extends StatelessWidget {
   final RunStorage storage;
+  final Settings settings;
   final bool audio;
-  const NightfallApp({super.key, required this.storage, this.audio = true});
+  const NightfallApp({super.key, required this.storage, required this.settings, this.audio = true});
 
   @override
   Widget build(BuildContext context) => MaterialApp(
         title: 'Nightfall Survivors',
         debugShowCheckedModeBanner: false,
         theme: nightfallTheme(),
-        home: GameShell(storage: storage, audio: audio),
+        home: GameShell(storage: storage, settings: settings, audio: audio),
       );
 }
 
 class GameShell extends StatefulWidget {
   final RunStorage storage;
+  final Settings settings;
   final bool audio;
-  const GameShell({super.key, required this.storage, this.audio = true});
+  const GameShell({super.key, required this.storage, required this.settings, this.audio = true});
 
   @override
   State<GameShell> createState() => _GameShellState();
@@ -57,7 +61,9 @@ class _GameShellState extends State<GameShell> {
   final Renderer _renderer = Renderer();
   final TouchState _touch = TouchState();
   late final Input _input = Input(_touch);
-  late final Sound _sound = Sound(enabled: widget.audio);
+  late final Sound _sound = Sound(enabled: widget.audio)
+    ..volume = widget.settings.volume
+    ..muted = widget.settings.muted;
   final FocusNode _focus = FocusNode(debugLabel: 'game');
   late final AppLifecycleListener _lifecycle;
 
@@ -247,7 +253,7 @@ class _GameShellState extends State<GameShell> {
     if (ModalRoute.of(context)?.isCurrent == false) return false;
     _input.keys.add(key);
     unawaited(_sound.unlock());
-    if (key == PhysicalKeyboardKey.keyM) _sound.toggleMute();
+    if (key == PhysicalKeyboardKey.keyM) _toggleMute();
     if (key == PhysicalKeyboardKey.f11) unawaited(toggleFullscreen());
     if (key == PhysicalKeyboardKey.escape && _screen == Screen.chars) {
       _setScreen(Screen.menu);
@@ -269,6 +275,20 @@ class _GameShellState extends State<GameShell> {
     // in a run, keep Space / arrows from activating focused buttons
     return _screen == null;
   }
+
+  void _toggleMute() {
+    setState(_sound.toggleMute);
+    widget.settings.muted = _sound.muted;
+  }
+
+  void _setVolume(double v) {
+    setState(() => _sound.setVolume(v));
+    widget.settings
+      ..volume = _sound.volume
+      ..muted = _sound.muted;
+  }
+
+  Widget _volumeControl() => VolumeControl(volume: _sound.volume, muted: _sound.muted, onChanged: _setVolume, onToggleMute: _toggleMute);
 
   void _onPointerDown(PointerDownEvent e) {
     unawaited(_sound.unlock());
@@ -326,11 +346,12 @@ class _GameShellState extends State<GameShell> {
           onCodex: () => _setScreen(Screen.codex),
           onExport: _exportSave,
           onImport: _importSave,
+          volume: _volumeControl(),
         ),
       Screen.chars => CharSelect(onPick: _startGame, onBack: () => _setScreen(Screen.menu)),
       Screen.codex => CodexScreen(onBack: () => _setScreen(Screen.menu)),
       Screen.levelup when me.choices != null => LevelUpScreen(choices: me.choices!, player: me, touch: _touch.enabled, onChoose: _input.choose),
-      Screen.pause => PauseScreen(player: me, onResume: () => _setPaused(false), onQuit: _toMenu),
+      Screen.pause => PauseScreen(player: me, onResume: () => _setPaused(false), onQuit: _toMenu, volume: _volumeControl()),
       Screen.over => GameOverScreen(
           state: s,
           onRetry: () => _startGame(_lastChar),

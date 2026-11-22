@@ -11,6 +11,7 @@ class MainMenu extends StatelessWidget {
   final bool saveMessageError;
   final bool touch;
   final VoidCallback onContinue, onNewRun, onCodex, onExport, onImport;
+  final Widget volume;
 
   const MainMenu({
     super.key,
@@ -23,6 +24,7 @@ class MainMenu extends StatelessWidget {
     required this.onCodex,
     required this.onExport,
     required this.onImport,
+    required this.volume,
   });
 
   @override
@@ -87,6 +89,7 @@ class MainMenu extends StatelessWidget {
             ],
           ),
         ),
+        volume,
         if (touch) const _TouchHelp() else const _KeyHelp(),
         const SizedBox(height: Nf.s5), // room for the corner links
       ],
