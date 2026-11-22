@@ -9,7 +9,7 @@ export 'src/content/perks.dart';
 export 'src/content/weapons.dart';
 export 'src/entities.dart';
 export 'src/fdlibm.dart' show jsAtan2, jsCos, jsSin;
-export 'src/js.dart' show hypot, jsNum, jsRound, roundInt;
+export 'src/js.dart' show hypot, i32, imul, jsNum, jsRound, roundInt, u32, ushr;
 export 'src/map.dart';
 export 'src/rng.dart';
 export 'src/save.dart';
