@@ -187,8 +187,13 @@ class _CodexScreenState extends State<CodexScreen> {
   @override
   Widget build(BuildContext context) {
     final size = MediaQuery.sizeOf(context);
-    final narrow = size.width <= 760;
-    final spreadH = math.max(380.0, math.min(540.0, size.height - 290));
+    // phones in landscape: the book fills the screen, Back sits in its header
+    final compact = Nf.compact(context) && size.width > size.height;
+    final narrow = size.width <= 760 && !compact;
+    final spreadH = compact
+        ? math.max(220.0, size.height - MediaQuery.paddingOf(context).vertical - 124)
+        : math.max(380.0, math.min(540.0, size.height - 290));
+    final back = NfButton('Back', size: compact ? BtnSize.sm : BtnSize.md, onPressed: widget.onBack);
     return Focus(
       focusNode: _focus,
       autofocus: true,
@@ -197,7 +202,7 @@ class _CodexScreenState extends State<CodexScreen> {
         children: [
           Container(
             width: math.min(1040, size.width - Nf.s4 * 2),
-            padding: EdgeInsets.all(narrow ? Nf.s3 : Nf.s5),
+            padding: EdgeInsets.all(narrow || compact ? Nf.s3 : Nf.s5),
             decoration: BoxDecoration(
               borderRadius: BorderRadius.circular(Nf.rLg),
               border: Border.all(color: Nf.goldLine),
@@ -208,10 +213,18 @@ class _CodexScreenState extends State<CodexScreen> {
               foregroundPainter: const _Corners(),
               child: Column(
                 children: [
-                  const ScreenTitle('Codex'),
-                  const SizedBox(height: Nf.s1),
-                  Text('A bestiary of the night', style: Nf.display(size: Nf.fsSm, weight: FontWeight.w400, color: Nf.muted, italic: true)),
-                  const SizedBox(height: Nf.s4),
+                  if (compact) ...[
+                    Stack(alignment: Alignment.center, children: [
+                      const ScreenTitle('Codex'),
+                      Align(alignment: Alignment.centerLeft, child: back),
+                    ]),
+                    const SizedBox(height: Nf.s2),
+                  ] else ...[
+                    const ScreenTitle('Codex'),
+                    const SizedBox(height: Nf.s1),
+                    Text('A bestiary of the night', style: Nf.display(size: Nf.fsSm, weight: FontWeight.w400, color: Nf.muted, italic: true)),
+                    const SizedBox(height: Nf.s4),
+                  ],
                   _tabs(narrow),
                   if (narrow) ...[
                     _strip(),
@@ -238,7 +251,7 @@ class _CodexScreenState extends State<CodexScreen> {
               ),
             ),
           ),
-          NfButton('Back', onPressed: widget.onBack),
+          if (!compact) back,
         ],
       ),
     );
@@ -321,13 +334,15 @@ class _CodexScreenState extends State<CodexScreen> {
     final peers = [for (final id in _chapters[_chapter].ids) enemyDefs[id]!];
     double max(double Function(EnemyDef e) f) => peers.map(f).reduce(math.max);
     final i = _order.indexOf(_current);
+    final compact = Nf.compact(context);
+    final plate = compact ? 96.0 : 132.0;
     const ink = Color(0xffdcd5c1);
     final page = Column(
       children: [
         Expanded(
           child: ListView(
             controller: _pageScroll,
-            padding: const EdgeInsets.all(Nf.s5),
+            padding: EdgeInsets.all(compact ? Nf.s3 : Nf.s5),
             children: [
               Wrap(
                 spacing: Nf.s4,
@@ -335,14 +350,14 @@ class _CodexScreenState extends State<CodexScreen> {
                 crossAxisAlignment: WrapCrossAlignment.center,
                 children: [
                   Container(
-                    width: 132,
-                    height: 132,
+                    width: plate,
+                    height: plate,
                     decoration: BoxDecoration(
                       borderRadius: BorderRadius.circular(Nf.rMd),
                       border: Border.all(color: d.boss ? Nf.goldLine : Nf.line),
                       gradient: RadialGradient(colors: [Nf.mix(c, 0.18), const Color(0x00000000)]),
                     ),
-                    child: Center(child: _portrait(_current, 120)),
+                    child: Center(child: _portrait(_current, plate - 12)),
                   ),
                   ConstrainedBox(
                     constraints: const BoxConstraints(maxWidth: 420),

@@ -49,8 +49,8 @@ void main() {
         _ => null,
       };
     });
-    for (final size in [const Size(1280, 720), const Size(390, 844)]) {
-      final tag = size.width > size.height ? 'wide' : 'phone';
+    // desktop, a narrow window, and phones in landscape (how they are played)
+    for (final (tag, size) in const [('wide', Size(1280, 720)), ('phone', Size(390, 844)), ('land', Size(844, 390)), ('land_small', Size(740, 360))]) {
       final kind = tag == 'wide' ? PointerDeviceKind.mouse : PointerDeviceKind.touch;
       await tester.binding.setSurfaceSize(size);
       tester.view.physicalSize = size;
@@ -63,7 +63,14 @@ void main() {
       await frames(tester);
       await shot(tester, '${tag}_chars');
 
-      await tester.tap(find.text('Mage'), kind: kind);
+      await tester.tap(find.text('Mage').first, kind: kind);
+      // landscape phones pick a hero first, then press Play
+      final play = find.text('PLAY');
+      if (play.evaluate().isNotEmpty) {
+        await frames(tester, 10);
+        await shot(tester, '${tag}_chars');
+        await tester.tap(play, kind: kind);
+      }
       await frames(tester, 240);
       await shot(tester, '${tag}_game');
 

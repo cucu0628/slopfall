@@ -10,6 +10,7 @@
   <meta name="author" content="cucu0628">
 
   <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black">
   <meta name="apple-mobile-web-app-title" content="Nightfall">
   <link rel="apple-touch-icon" href="apple-touch-icon.png">
@@ -33,6 +34,28 @@
   </style>
 </head>
 <body>
+  <script>
+    // Phones and tablets: play like a native game.
+    (function () {
+      var touch = matchMedia('(pointer: coarse)').matches || (navigator.maxTouchPoints > 0 && matchMedia('(hover: none)').matches);
+      if (!touch) return;
+      // Render at most 2 device pixels per CSS pixel. Phones report up to 3-4,
+      // which makes Flutter fill 2-4x more pixels per frame for little visible gain.
+      var dpr = window.devicePixelRatio || 1;
+      if (dpr > 2) Object.defineProperty(window, 'devicePixelRatio', { get: function () { return 2; }, configurable: true });
+      // Fullscreen and landscape lock need a user gesture: the first tap (and
+      // any tap after the player left fullscreen) asks again.
+      function enter() {
+        var d = document.documentElement;
+        if (document.fullscreenElement || !d.requestFullscreen) return;
+        d.requestFullscreen({ navigationUI: 'hide' }).then(function () {
+          if (screen.orientation && screen.orientation.lock) return screen.orientation.lock('landscape');
+        }).catch(function () {});
+      }
+      window.addEventListener('pointerup', enter, true);
+      window.addEventListener('touchend', enter, true);
+    })();
+  </script>
   <div id="loading">NIGHTFALL<small>LOADING</small><i></i></div>
   <!-- flutter_soloud web audio engine -->
   <script src="assets/packages/flutter_soloud/web/init_soloud.js" defer></script>

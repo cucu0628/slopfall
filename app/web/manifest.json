@@ -3,7 +3,7 @@
   "short_name": "Nightfall",
   "start_url": ".",
   "display": "fullscreen",
-  "orientation": "any",
+  "orientation": "landscape",
   "background_color": "#0b0d17",
   "theme_color": "#0b0d17",
   "description": "A survivor roguelite",

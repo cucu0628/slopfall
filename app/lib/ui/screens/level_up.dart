@@ -53,7 +53,8 @@ class LevelUpScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final evolving = choices.isNotEmpty && choices[0].kind == 'evo';
-    final cards = <Widget>[
+    final compact = Nf.compact(context);
+    final cards = <_Card>[
       for (var i = 0; i < choices.length; i++)
         _Card(view: optionView(choices[i], player.charId), index: i, touch: touch, onTap: () => onChoose(i), autofocus: i == 0),
     ];
@@ -76,9 +77,9 @@ class LevelUpScreen extends StatelessWidget {
       children: [
         ScreenTitle(evolving ? 'Choose an evolution' : 'Level up!', color: const Color(0xffbfe0ff), glow: ScreenTitle.blueGlow),
         _CardRow(cards: cards),
-        if (touch)
+        if (touch && !compact)
           Text('Tap a card', style: Nf.ui(color: Nf.muted))
-        else
+        else if (!touch)
           Wrap(
             crossAxisAlignment: WrapCrossAlignment.center,
             spacing: 5,
@@ -100,6 +101,7 @@ class _Card extends StatefulWidget {
   final VoidCallback? onTap;
   /// In a row of equal-height cards: the key hint sits at the bottom.
   final bool stretch;
+  final double width;
   const _Card({
     required this.view,
     required this.index,
@@ -108,9 +110,11 @@ class _Card extends StatefulWidget {
     this.locked = false,
     this.autofocus = false,
     this.stretch = false,
+    this.width = _cardW,
   });
 
-  _Card stretched() => _Card(view: view, index: index, touch: touch, onTap: onTap, locked: locked, autofocus: autofocus, stretch: true);
+  _Card sized({required bool stretch, required double width}) =>
+      _Card(view: view, index: index, touch: touch, onTap: onTap, locked: locked, autofocus: autofocus, stretch: stretch, width: width);
 
   @override
   State<_Card> createState() => _CardState();
@@ -120,6 +124,7 @@ class _CardState extends State<_Card> with SingleTickerProviderStateMixin {
   bool _hover = false;
   bool _focus = false;
   late final AnimationController _pop = AnimationController(vsync: this, duration: const Duration(milliseconds: 250));
+  late final Animation<double> _k = CurvedAnimation(parent: _pop, curve: Nf.ease);
 
   @override
   void initState() {
@@ -139,6 +144,10 @@ class _CardState extends State<_Card> with SingleTickerProviderStateMixin {
   Widget build(BuildContext context) {
     final v = widget.view;
     final c = cssColor(v.color);
+    // short screens (phones in landscape): a smaller icon and tighter text
+    final compact = Nf.compact(context);
+    final pad = compact ? Nf.s3 : Nf.s4, padTop = compact ? Nf.s3 : Nf.s5;
+    final well = compact ? 40.0 : 64.0;
     final lit = !widget.locked && (_hover || _focus);
     final rare = v.rarity == 'RARE', epic = v.rarity == 'EPIC';
     Color? border;
@@ -153,12 +162,12 @@ class _CardState extends State<_Card> with SingleTickerProviderStateMixin {
     }
     final card = Panel(
       accent: c,
-      width: 232,
+      width: widget.width,
       borderColor: border,
       glow: lit || epic ? [BoxShadow(color: Nf.mix(c, 0.45), blurRadius: lit ? 28 : 24)] : null,
-      padding: const EdgeInsets.fromLTRB(Nf.s4, Nf.s5, Nf.s4, Nf.s4),
+      padding: EdgeInsets.fromLTRB(pad, padTop, pad, pad),
       child: ConstrainedBox(
-        constraints: const BoxConstraints(minHeight: 228 - Nf.s5 - Nf.s4),
+        constraints: BoxConstraints(minHeight: compact ? 0 : 228 - Nf.s5 - Nf.s4),
         child: Stack(
           clipBehavior: Clip.none,
           alignment: Alignment.topCenter,
@@ -166,8 +175,8 @@ class _CardState extends State<_Card> with SingleTickerProviderStateMixin {
           children: [
             if (v.rarity.isNotEmpty)
               Positioned(
-                top: -Nf.s5 + Nf.s2,
-                right: -Nf.s4 + Nf.s3,
+                top: -padTop + (compact ? Nf.s1 : Nf.s2),
+                right: -pad + (compact ? Nf.s2 : Nf.s3),
                 child: Text(v.rarity, style: Nf.ui(size: 10, weight: FontWeight.w900, color: c, spacing: 1.4)),
               ),
             Column(
@@ -177,35 +186,35 @@ class _CardState extends State<_Card> with SingleTickerProviderStateMixin {
                 const SizedBox(width: double.infinity),
                 // the icon sits in a round, tinted well
                 Container(
-                  width: 64,
-                  height: 64,
+                  width: well,
+                  height: well,
                   alignment: Alignment.center,
-                  margin: const EdgeInsets.only(bottom: Nf.s1),
+                  margin: EdgeInsets.only(bottom: compact ? 0 : Nf.s1),
                   decoration: BoxDecoration(
                     shape: BoxShape.circle,
                     border: Border.all(color: Nf.mix(c, 0.35)),
                     gradient: RadialGradient(center: const Alignment(0, -0.2), radius: 0.7, colors: [Nf.mix(c, 0.26), c.withValues(alpha: 0)]),
                   ),
-                  child: IconGlyph(v.icon, size: 34, color: c, shadows: [Shadow(color: c, blurRadius: 14)]),
+                  child: IconGlyph(v.icon, size: well * 0.53, color: c, shadows: [Shadow(color: c, blurRadius: compact ? 8 : 14)]),
                 ),
-                const SizedBox(height: Nf.s2),
-                Text(v.name, textAlign: TextAlign.center, style: Nf.display(size: Nf.fsLg)),
-                const SizedBox(height: Nf.s2),
+                SizedBox(height: compact ? Nf.s1 : Nf.s2),
+                Text(v.name, textAlign: TextAlign.center, style: Nf.display(size: compact ? Nf.fsMd : Nf.fsLg)),
+                SizedBox(height: compact ? Nf.s1 : Nf.s2),
                 Container(
                   padding: const EdgeInsets.symmetric(horizontal: Nf.s2, vertical: 2),
                   decoration: BoxDecoration(color: v.isNew ? Nf.gold : Nf.well, borderRadius: BorderRadius.circular(999)),
                   child: Text(v.tag,
                       style: Nf.ui(size: Nf.fsXs, weight: FontWeight.w800, spacing: 1.1, color: v.isNew ? const Color(0xff1b1405) : Nf.muted)),
                 ),
-                const SizedBox(height: Nf.s2),
-                Text(v.desc, textAlign: TextAlign.center, style: Nf.ui(size: Nf.fsSm, height: 1.45)),
+                SizedBox(height: compact ? Nf.s1 : Nf.s2),
+                Text(v.desc, textAlign: TextAlign.center, style: Nf.ui(size: Nf.fsSm, height: compact ? 1.3 : 1.45)),
                 if (v.evo.isNotEmpty) ...[
-                  const SizedBox(height: Nf.s2),
+                  SizedBox(height: compact ? Nf.s1 : Nf.s2),
                   Container(
                     width: double.infinity,
-                    padding: const EdgeInsets.only(top: Nf.s2),
+                    padding: EdgeInsets.only(top: compact ? Nf.s1 : Nf.s2),
                     decoration: const BoxDecoration(border: Border(top: BorderSide(color: Nf.lineFaint))),
-                    child: Text(v.evo, textAlign: TextAlign.center, style: Nf.ui(size: Nf.fsXs, height: 1.45, color: Nf.gold)),
+                    child: Text(v.evo, textAlign: TextAlign.center, style: Nf.ui(size: Nf.fsXs, height: compact ? 1.3 : 1.45, color: Nf.gold)),
                   ),
                 ],
                 if (!widget.touch && !widget.locked) ...[
@@ -219,16 +228,22 @@ class _CardState extends State<_Card> with SingleTickerProviderStateMixin {
         ),
       ),
     );
-    final anim = AnimatedBuilder(
-      animation: _pop,
-      builder: (context, child) {
-        final k = Nf.ease.transform(_pop.value);
-        return Opacity(
-          opacity: k,
-          child: Transform.translate(offset: Offset(0, 16 * (1 - k)), child: Transform.scale(scale: 0.96 + 0.04 * k, child: child)),
-        );
-      },
-      child: AnimatedSlide(duration: Nf.fast, curve: Nf.ease, offset: Offset(0, lit ? -0.018 : 0), child: card),
+    // the card is painted once into its own layer; the pop-in only moves and
+    // fades that layer, so it doesn't repaint text, gradients and shadows
+    final anim = FadeTransition(
+      opacity: _k,
+      child: AnimatedBuilder(
+        animation: _k,
+        builder: (context, child) {
+          final k = _k.value;
+          return Transform(
+            alignment: Alignment.center,
+            transform: Matrix4.translationValues(0, 16 * (1 - k), 0)..scaleByDouble(0.96 + 0.04 * k, 0.96 + 0.04 * k, 1, 1),
+            child: child,
+          );
+        },
+        child: AnimatedSlide(duration: Nf.fast, curve: Nf.ease, offset: Offset(0, lit ? -0.018 : 0), child: RepaintBoundary(child: card)),
+      ),
     );
     if (widget.locked) {
       return Opacity(
@@ -255,28 +270,40 @@ class _CardState extends State<_Card> with SingleTickerProviderStateMixin {
   }
 }
 
+const double _cardW = 232;
+
 /// One row of equal-height cards when they fit side by side (like the
-/// original flex row); otherwise they wrap and keep their own heights.
+/// original flex row); otherwise they wrap and keep their own heights. On
+/// short screens the cards narrow down to stay in one row.
 class _CardRow extends StatelessWidget {
-  final List<Widget> cards;
+  final List<_Card> cards;
   const _CardRow({required this.cards});
 
   @override
   Widget build(BuildContext context) {
-    const cardW = 232.0;
-    final fits = cards.length * cardW + (cards.length - 1) * Nf.s4 <= MediaQuery.sizeOf(context).width - Nf.s4 * 2;
-    if (!fits) return Wrap(alignment: WrapAlignment.center, spacing: Nf.s4, runSpacing: Nf.s4, children: cards);
-    return IntrinsicHeight(
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          for (var i = 0; i < cards.length; i++) ...[
-            if (i > 0) const SizedBox(width: Nf.s4),
-            cards[i] is _Card ? (cards[i] as _Card).stretched() : cards[i],
+    final compact = Nf.compact(context);
+    final gap = compact ? Nf.s3 : Nf.s4;
+    return LayoutBuilder(builder: (context, c) {
+      final n = cards.length;
+      final room = c.maxWidth.isFinite ? c.maxWidth : MediaQuery.sizeOf(context).width - Nf.s4 * 2;
+      var w = _cardW;
+      if (compact) w = ((room - (n - 1) * gap) / n).clamp(150.0, _cardW);
+      final fits = n * w + (n - 1) * gap <= room;
+      if (!fits) {
+        return Wrap(alignment: WrapAlignment.center, spacing: gap, runSpacing: gap, children: [for (final k in cards) k.sized(stretch: false, width: w)]);
+      }
+      return IntrinsicHeight(
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            for (var i = 0; i < n; i++) ...[
+              if (i > 0) SizedBox(width: gap),
+              cards[i].sized(stretch: true, width: w),
+            ],
           ],
-        ],
-      ),
-    );
+        ),
+      );
+    });
   }
 }

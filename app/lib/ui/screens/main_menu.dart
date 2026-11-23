@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 import '../theme.dart';
+import '../volume_control.dart';
 
 class MainMenu extends StatelessWidget {
   final String? continueInfo;
@@ -29,68 +30,85 @@ class MainMenu extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final width = MediaQuery.sizeOf(context).width;
-    final logo = (width * 0.08).clamp(42.0, 92.0);
+    final size = MediaQuery.sizeOf(context);
+    final width = size.width;
+    // phones in landscape: logo and help on the left, actions on the right
+    final split = Nf.compact(context) && width > size.height;
+    final logo = split ? (size.height * 0.12).clamp(36.0, 64.0) : (width * 0.08).clamp(42.0, 92.0);
     final saved = continueInfo != null;
-    return ScreenLayer(
-      gap: Nf.s6,
-      corner: _CornerLinks(small: width <= 620),
+    final logoBlock = Column(
       children: [
-        // logo
-        Column(
-          children: [
-            Text(
-              'NIGHTFALL',
-              textAlign: TextAlign.center,
-              style: Nf.ui(size: logo, weight: FontWeight.w900, color: Colors.white, spacing: logo * 0.08, height: 0.95).copyWith(shadows: const [
-                Shadow(color: Color.fromRGBO(160, 110, 255, 0.8), blurRadius: 24),
-                Shadow(color: Color.fromRGBO(79, 163, 255, 0.5), blurRadius: 60),
-              ]),
-            ),
-            Text(
-              'SURVIVORS',
-              textAlign: TextAlign.center,
-              style: Nf.ui(size: logo * 0.42, weight: FontWeight.w900, color: Nf.gold, spacing: logo * 0.42 * 0.45, height: 1.2)
-                  .copyWith(shadows: const [Shadow(color: Color.fromRGBO(255, 209, 102, 0.7), blurRadius: 18)]),
-            ),
-          ],
+        Text(
+          'NIGHTFALL',
+          textAlign: TextAlign.center,
+          style: Nf.ui(size: logo, weight: FontWeight.w900, color: Colors.white, spacing: logo * 0.08, height: 0.95).copyWith(shadows: const [
+            Shadow(color: Color.fromRGBO(160, 110, 255, 0.8), blurRadius: 24),
+            Shadow(color: Color.fromRGBO(79, 163, 255, 0.5), blurRadius: 60),
+          ]),
         ),
-        SizedBox(
-          width: width < 372 ? width - Nf.s6 : 340,
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
+        Text(
+          'SURVIVORS',
+          textAlign: TextAlign.center,
+          style: Nf.ui(size: logo * 0.42, weight: FontWeight.w900, color: Nf.gold, spacing: logo * 0.42 * 0.45, height: 1.2)
+              .copyWith(shadows: const [Shadow(color: Color.fromRGBO(255, 209, 102, 0.7), blurRadius: 18)]),
+        ),
+      ],
+    );
+    final actions = SizedBox(
+      width: split ? 300 : (width < 372 ? width - Nf.s6 : 340),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          if (saved) ...[
+            NfButton(
+              'Continue',
+              kind: BtnKind.success,
+              size: split ? BtnSize.md : BtnSize.lg,
+              onPressed: onContinue,
+              autofocus: true,
+              sub: Text(continueInfo!, style: Nf.ui(size: Nf.fsXs, weight: FontWeight.w600, spacing: 0.4, color: Nf.text.withValues(alpha: 0.9))),
+            ),
+            SizedBox(height: split ? Nf.s2 : Nf.s3),
+          ],
+          NfButton('New run', kind: BtnKind.primary, size: split ? BtnSize.md : BtnSize.lg, onPressed: onNewRun, autofocus: !saved),
+          SizedBox(height: split ? Nf.s2 : Nf.s3),
+          Row(
             children: [
-              if (saved) ...[
-                NfButton(
-                  'Continue',
-                  kind: BtnKind.success,
-                  size: BtnSize.lg,
-                  onPressed: onContinue,
-                  autofocus: true,
-                  sub: Text(continueInfo!, style: Nf.ui(size: Nf.fsXs, weight: FontWeight.w600, spacing: 0.4, color: Nf.text.withValues(alpha: 0.9))),
-                ),
-                const SizedBox(height: Nf.s3),
-              ],
-              NfButton('New run', kind: BtnKind.primary, size: BtnSize.lg, onPressed: onNewRun, autofocus: !saved),
-              const SizedBox(height: Nf.s3),
-              Row(
-                children: [
-                  Expanded(child: NfButton('Codex', size: BtnSize.sm, onPressed: onCodex)),
-                  if (saved) ...[const SizedBox(width: Nf.s2), Expanded(child: NfButton('Export save', size: BtnSize.sm, onPressed: onExport))],
-                  const SizedBox(width: Nf.s2),
-                  Expanded(child: NfButton('Import save', size: BtnSize.sm, onPressed: onImport)),
-                ],
-              ),
-              if (saveMessage != null) ...[
-                const SizedBox(height: Nf.s3),
-                Text(saveMessage!,
-                    textAlign: TextAlign.center, style: Nf.ui(size: Nf.fsSm, color: saveMessageError ? Nf.red : const Color(0xff7df0c4))),
-              ],
+              Expanded(child: NfButton('Codex', size: BtnSize.sm, onPressed: onCodex)),
+              if (saved) ...[const SizedBox(width: Nf.s2), Expanded(child: NfButton('Export save', size: BtnSize.sm, onPressed: onExport))],
+              const SizedBox(width: Nf.s2),
+              Expanded(child: NfButton('Import save', size: BtnSize.sm, onPressed: onImport)),
             ],
           ),
-        ),
-        volume,
-        if (touch) const _TouchHelp() else const _KeyHelp(),
+          if (saveMessage != null) ...[
+            const SizedBox(height: Nf.s3),
+            Text(saveMessage!,
+                textAlign: TextAlign.center, style: Nf.ui(size: Nf.fsSm, color: saveMessageError ? Nf.red : const Color(0xff7df0c4))),
+          ],
+        ],
+      ),
+    );
+    final help = touch ? const _TouchHelp() : const _KeyHelp();
+    if (split) {
+      return ScreenLayer(
+        corners: [const _CornerLinks(small: true), volumeCorner(volume)],
+        children: [
+          Row(mainAxisSize: MainAxisSize.min, children: [
+            Column(mainAxisSize: MainAxisSize.min, children: [logoBlock, const SizedBox(height: Nf.s4), help]),
+            const SizedBox(width: Nf.s6),
+            actions,
+          ]),
+          const SizedBox(height: Nf.s3), // room for the corner links
+        ],
+      );
+    }
+    return ScreenLayer(
+      gap: Nf.s6,
+      corners: [_CornerLinks(small: width <= 620), volumeCorner(volume)],
+      children: [
+        logoBlock,
+        actions,
+        help,
         const SizedBox(height: Nf.s5), // room for the corner links
       ],
     );

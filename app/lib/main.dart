@@ -14,6 +14,7 @@ Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
   // right click is the ability button: no browser context menu on the web
   if (kIsWeb) await BrowserContextMenu.disableContextMenu();
+  await initMobileScreen();
   final frame = await initDesktopWindow();
   final storage = await RunStorage.open();
   await warmUpIconGlyphs();
