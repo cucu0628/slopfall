@@ -26,6 +26,7 @@ import 'ui/screens/main_menu.dart';
 import 'ui/screens/pause.dart';
 import 'ui/theme.dart';
 import 'ui/perf_overlay.dart';
+import 'ui/rotate_hint.dart';
 import 'ui/touch_controls.dart';
 import 'ui/volume_control.dart';
 import 'ui/window_frame.dart';
@@ -82,8 +83,8 @@ class _GameShellState extends State<GameShell> {
   String? _saveMsg;
   bool _saveMsgError = false;
   bool _showPerf = false; // F3
-  // touch button cooldowns, refreshed a few times per second
-  double _abilityCd = 0, _dashCd = 0;
+  // touch button cooldowns (ability, dash); only the touch controls rebuild
+  final ValueNotifier<(double, double)> _cooldowns = ValueNotifier((0, 0));
 
   RunStorage get _storage => widget.storage;
 
@@ -91,6 +92,7 @@ class _GameShellState extends State<GameShell> {
   void initState() {
     super.initState();
     _touch.enabled = isTouchPlatform;
+    Nf.lite = isTouchPlatform;
     _renderer
       ..touchMode = _touch.enabled
       ..maxGroundRes = isTouchPlatform ? 1.5 : 2;
@@ -112,6 +114,7 @@ class _GameShellState extends State<GameShell> {
     HardwareKeyboard.instance.removeHandler(_onKey);
     _lifecycle.dispose();
     _focus.dispose();
+    _cooldowns.dispose();
     _renderer.dispose();
     super.dispose();
   }
@@ -208,13 +211,11 @@ class _GameShellState extends State<GameShell> {
     if (s.time - _lastSave >= _saveEvery) _writeSave();
     if (_touch.enabled) {
       final a = me.abilityCd / math.max(0.01, me.abilityMaxCd), d = me.dashCd / math.max(0.01, me.dashMaxCd);
-      if ((a - _abilityCd).abs() > 0.02 || (d - _dashCd).abs() > 0.02 || (a <= 0) != (_abilityCd <= 0) || (d <= 0) != (_dashCd <= 0)) {
-        setState(() {
-          _abilityCd = a;
-          _dashCd = d;
-        });
-      }
+      final (oa, od) = _cooldowns.value;
+      if ((a - oa).abs() > 0.02 || (d - od).abs() > 0.02 || (a <= 0) != (oa <= 0) || (d <= 0) != (od <= 0)) _cooldowns.value = (a, d);
     }
+    // phones are played in landscape: turning to portrait pauses the run
+    if (isTouchPlatform && _portrait && _screen == null) _setPaused(true);
     if (!identical(me.choices, _shownChoices)) {
       _shownChoices = me.choices;
       if (me.choices != null) {
@@ -284,6 +285,8 @@ class _GameShellState extends State<GameShell> {
     // in a run, keep Space / arrows from activating focused buttons
     return _screen == null;
   }
+
+  bool get _portrait => _renderer.h > _renderer.w;
 
   void _toggleMute() {
     setState(_sound.toggleMute);
@@ -379,16 +382,20 @@ class _GameShellState extends State<GameShell> {
         child: Stack(
           fit: StackFit.expand,
           children: [
-            GameView(session: _session, onPointerDown: _onPointerDown),
+            GameView(session: _session, onPointerDown: _onPointerDown, frozen: _realRun && _screen != null),
             if (_touch.active && _realRun)
-              TouchControls(
-                state: _touch,
-                abilityColor: characterDefs[me.charId]!.accent,
-                abilityCd: _abilityCd,
-                dashCd: _dashCd,
-                onPause: () => _setPaused(true),
+              ValueListenableBuilder(
+                valueListenable: _cooldowns,
+                builder: (context, cd, _) => TouchControls(
+                  state: _touch,
+                  abilityColor: characterDefs[me.charId]!.accent,
+                  abilityCd: cd.$1,
+                  dashCd: cd.$2,
+                  onPause: () => _setPaused(true),
+                ),
               ),
             if (overlay != null) Listener(onPointerDown: _onPointerDown, child: overlay),
+            if (isTouchPlatform && MediaQuery.sizeOf(context).height > MediaQuery.sizeOf(context).width) const RotateHint(),
             if (_showPerf) const Positioned(left: 16, bottom: 120, child: PerfOverlay()),
           ],
         ),

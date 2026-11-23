@@ -6,6 +6,7 @@ import 'package:nightfall_sim/nightfall_sim.dart';
 import '../../render/canvas2d.dart' show cssColor;
 import '../icon_glyph.dart';
 import '../theme.dart';
+import '../volume_control.dart';
 
 String pct(double v) => '${v >= 0 ? '+' : ''}${roundInt(v * 100)}%';
 
@@ -47,16 +48,19 @@ class PauseScreen extends StatelessWidget {
       for (final e in p.bonus.entries) (bonusDefs[e.key]!.icon, bonusDefs[e.key]!.color, bonusDefs[e.key]!.name, '×${e.value}', false),
     ];
     final width = MediaQuery.sizeOf(context).width;
+    // phones in landscape: the three columns side by side, denser rows
+    final compact = Nf.compact(context) && width >= 700;
+    final rowPad = compact ? 2.0 : 5.0;
     Widget group(String title, List<(String, String)> rows, double w) => SizedBox(
           width: w,
           child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
             NfLabel(title),
             const SizedBox(height: Nf.s2),
-            StatTable(rows: [for (final (k, v) in rows) (Text(k, style: Nf.ui(size: Nf.fsSm, color: Nf.muted)), v)]),
+            StatTable(dense: compact, rows: [for (final (k, v) in rows) (Text(k, style: Nf.ui(size: Nf.fsSm, color: Nf.muted)), v)]),
           ]),
         );
     Widget item((String, String, String, String, bool) a, {bool rule = true}) => Container(
-          padding: const EdgeInsets.symmetric(vertical: 5, horizontal: Nf.s1),
+          padding: EdgeInsets.symmetric(vertical: rowPad, horizontal: Nf.s1),
           decoration: BoxDecoration(border: rule ? const Border(top: BorderSide(color: Nf.lineFaint)) : null),
           child: Row(children: [
             SizedBox(width: 22, height: 20, child: Center(child: IconGlyph(a.$1, size: 16, color: cssColor(a.$2)))),
@@ -66,7 +70,7 @@ class PauseScreen extends StatelessWidget {
           ]),
         );
     final ars = SizedBox(
-      width: 250,
+      width: compact ? 230 : 250,
       child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
         const NfLabel('Arsenal'),
         const SizedBox(height: Nf.s2),
@@ -74,7 +78,15 @@ class PauseScreen extends StatelessWidget {
       ]),
     );
     final Widget body;
-    if (width >= 900) {
+    if (compact) {
+      body = Row(mainAxisSize: MainAxisSize.min, crossAxisAlignment: CrossAxisAlignment.start, children: [
+        ars,
+        Container(width: 1, height: 200, margin: const EdgeInsets.symmetric(horizontal: Nf.s4), color: Nf.lineFaint),
+        group('Survival', survival, 180),
+        const SizedBox(width: Nf.s4),
+        group('Offense', offense, 180),
+      ]);
+    } else if (width >= 900) {
       body = Row(mainAxisSize: MainAxisSize.min, crossAxisAlignment: CrossAxisAlignment.start, children: [
         ars,
         Container(width: 1, height: 280, margin: const EdgeInsets.symmetric(horizontal: Nf.s5), color: Nf.lineFaint),
@@ -103,17 +115,20 @@ class PauseScreen extends StatelessWidget {
       ]);
     }
     final actions = Wrap(spacing: Nf.s3, runSpacing: Nf.s3, alignment: WrapAlignment.center, children: [
-      NfButton('Resume', kind: BtnKind.primary, onPressed: onResume, minWidth: 170, autofocus: true),
-      NfButton('Quit to menu', onPressed: onQuit, minWidth: 170),
+      NfButton('Resume', kind: BtnKind.primary, onPressed: onResume, minWidth: compact ? 150 : 170, autofocus: true),
+      NfButton('Quit to menu', onPressed: onQuit, minWidth: compact ? 150 : 170),
     ]);
-    final panel = Panel(padding: const EdgeInsets.all(Nf.s5), child: body);
+    final panel = Panel(padding: EdgeInsets.all(compact ? Nf.s3 : Nf.s5), child: body);
     return ScreenLayer(
       overlay: true,
       gap: Nf.s4,
-      // phones: Resume first, within thumb reach; the stats scroll below
-      children: width < 620
-          ? [const ScreenTitle('Paused'), actions, volume, panel]
-          : [const ScreenTitle('Paused'), panel, volume, actions],
+      corners: [volumeCorner(volume)],
+      // portrait phones: Resume first, within thumb reach; the stats scroll below
+      children: compact
+          ? [const ScreenTitle('Paused'), actions, panel]
+          : width < 620
+              ? [const ScreenTitle('Paused'), actions, panel]
+              : [const ScreenTitle('Paused'), panel, actions],
     );
   }
 }
@@ -121,14 +136,15 @@ class PauseScreen extends StatelessWidget {
 /// `.stats` table: key on the left, bold value on the right, faint row rules.
 class StatTable extends StatelessWidget {
   final List<(Widget, String)> rows;
-  const StatTable({super.key, required this.rows});
+  final bool dense;
+  const StatTable({super.key, required this.rows, this.dense = false});
 
   @override
   Widget build(BuildContext context) => Column(
         children: [
           for (var i = 0; i < rows.length; i++)
             Container(
-              padding: const EdgeInsets.symmetric(vertical: 5, horizontal: Nf.s1),
+              padding: EdgeInsets.symmetric(vertical: dense ? 2 : 5, horizontal: Nf.s1),
               decoration: BoxDecoration(border: i > 0 ? const Border(top: BorderSide(color: Nf.lineFaint)) : null),
               child: Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
                 Expanded(child: rows[i].$1),

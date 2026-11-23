@@ -117,7 +117,8 @@ When tuning, measure instead of guessing: write a throwaway test that builds a p
 - Keep files focused; prefer adding a new file under the right folder over growing a big one.
 - Rendering uses procedural vector graphics only (no image assets), drawn through `Ctx2D`. Glows use `glow()` from render/sprites.dart, not blurs.
 - UI uses the tokens in `ui/theme.dart` (`Nf.s*` spacing, `Nf.fs*` sizes, `Nf.r*` radii, colours) and its primitives. Don't add raw sizes or colours in screens.
-- Mobile matters: check layouts at phone sizes (390×844 and 844×390), e.g. with the UI snapshot test.
+- Mobile matters: phones are played **in landscape only** (Android: `sensorLandscape` + immersive mode from start-up; web: `web/index.html` enters fullscreen and locks landscape on the first tap, `RotateHint` covers portrait where the lock fails). Check layouts at 844×390 and 740×360 with the UI snapshot test. Short screens (`Nf.compact(context)`, height < 520) get tighter layouts: cards in one row, Back beside the title, a hero strip instead of the hero grid.
+- Overlay performance: while an overlay covers a run, `GameView(frozen: true)` keeps one blurred image of the last frame instead of redrawing the world (no `BackdropFilter`). `Nf.lite` (touch platforms) drops the soft panel shadows. On the web, touch devices render at most 2 device pixels per CSS pixel (`index.html`).
 
 ## Deployment and license
 

@@ -6,6 +6,10 @@ import 'package:web/web.dart' as web;
 /// The browser draws the window: no title bar of our own.
 Future<bool> initDesktopWindow() async => false;
 
+/// Phones: web/index.html enters fullscreen and locks landscape on the first
+/// tap (the browser only allows it in response to one).
+Future<void> initMobileScreen() async {}
+
 Future<void> toggleFullscreen() async {
   try {
     if (web.document.fullscreenElement != null) {
@@ -16,13 +20,7 @@ Future<void> toggleFullscreen() async {
   } catch (_) {}
 }
 
-/// On phones a run asks for fullscreen (ignored where unsupported, e.g. iOS Safari).
 Future<void> enterGame() async {
-  if (isTouchPlatform && web.document.fullscreenElement == null) {
-    try {
-      await web.document.documentElement?.requestFullscreen().toDart;
-    } catch (_) {}
-  }
   try {
     await WakelockPlus.enable();
   } catch (_) {}

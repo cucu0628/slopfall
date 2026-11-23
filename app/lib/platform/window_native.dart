@@ -28,6 +28,14 @@ Future<bool> initDesktopWindow() async {
   }
 }
 
+/// Phones: landscape only and fullscreen (no status / navigation bar) from
+/// the start, like a native game.
+Future<void> initMobileScreen() async {
+  if (!(Platform.isAndroid || Platform.isIOS)) return;
+  await SystemChrome.setPreferredOrientations([DeviceOrientation.landscapeLeft, DeviceOrientation.landscapeRight]);
+  await SystemChrome.setEnabledSystemUIMode(SystemUiMode.immersiveSticky);
+}
+
 /// Desktop: toggles fullscreen. Mobile is always fullscreen.
 Future<void> toggleFullscreen() async {
   if (!_desktop) return;

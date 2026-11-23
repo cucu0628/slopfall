@@ -3,7 +3,6 @@
 // avoid raw sizes or colours elsewhere.
 
 import 'dart:math' as math;
-import 'dart:ui' as ui;
 
 import 'package:flutter/material.dart';
 
@@ -34,6 +33,7 @@ abstract final class Nf {
   static const fsLg = 18.0;
   static const fsXl = 24.0;
   static double fsTitle(double width) => (width * 0.04).clamp(28.0, 38.0);
+  static const fsTitleCompact = 22.0;
 
   // ---- space and shape
   static const s1 = 4.0;
@@ -72,6 +72,14 @@ abstract final class Nf {
         letterSpacing: spacing,
         fontStyle: italic ? FontStyle.italic : FontStyle.normal,
       );
+
+  /// Phones and tablets: no soft drop shadows behind panels (blurs are
+  /// expensive to redraw while cards animate). Set once at start-up.
+  static bool lite = false;
+
+  /// Short screens (phones in landscape): tighter spacing and smaller titles,
+  /// so screens fit without scrolling.
+  static bool compact(BuildContext context) => MediaQuery.sizeOf(context).height < 520;
 
   /// `color-mix(in srgb, c p%, transparent)`.
   static Color mix(Color c, double p) => c.withValues(alpha: c.a * p);
@@ -114,7 +122,7 @@ class Panel extends StatelessWidget {
         borderRadius: BorderRadius.circular(Nf.rLg),
         border: Border.all(color: borderColor ?? Nf.line),
         gradient: const LinearGradient(begin: Alignment.topCenter, end: Alignment.bottomCenter, colors: [Nf.surfaceTop, Nf.surfaceBottom]),
-        boxShadow: [...Nf.shadow1, ...?glow],
+        boxShadow: [if (!Nf.lite) ...Nf.shadow1, ...?glow],
       ),
       foregroundDecoration: a == null
           ? null
@@ -293,7 +301,8 @@ class ScreenTitle extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final size = Nf.fsTitle(MediaQuery.sizeOf(context).width);
+    final compact = Nf.compact(context);
+    final size = compact ? Nf.fsTitleCompact : Nf.fsTitle(MediaQuery.sizeOf(context).width);
     return Column(
       mainAxisSize: MainAxisSize.min,
       children: [
@@ -302,7 +311,7 @@ class ScreenTitle extends StatelessWidget {
           textAlign: TextAlign.center,
           style: Nf.display(size: size, spacing: size * 0.16, color: color).copyWith(height: 1.1, shadows: glow),
         ),
-        const SizedBox(height: Nf.s2),
+        SizedBox(height: compact ? Nf.s1 : Nf.s2),
         const CustomPaint(size: Size(150, 10), painter: _Divider()),
       ],
     );
@@ -336,32 +345,37 @@ class _Divider extends CustomPainter {
 }
 
 /// A full-screen layer: centred content that scrolls when taller than the
-/// screen, over the menu or overlay background.
+/// screen, over the menu or overlay background. Overlays don't blur the game
+/// themselves: the game view bakes the blur into its frozen frame.
 class ScreenLayer extends StatelessWidget {
   final List<Widget> children;
   final bool overlay;
   final double gap;
-  final Widget? corner;
+  /// Positioned widgets over the layer (corner links, the volume).
+  final List<Widget> corners;
 
-  const ScreenLayer({super.key, required this.children, this.overlay = false, this.gap = Nf.s5, this.corner});
+  const ScreenLayer({super.key, required this.children, this.overlay = false, this.gap = Nf.s5, this.corners = const []});
 
   @override
   Widget build(BuildContext context) {
+    final compact = Nf.compact(context);
+    final gap = compact ? math.min(this.gap, Nf.s3) : this.gap;
+    final pad = compact ? Nf.s2 : Nf.s4;
     final bg = overlay
         ? const RadialGradient(radius: 0.9, colors: [Color.fromRGBO(5, 7, 15, 0.7), Color.fromRGBO(5, 7, 15, 0.9)])
         // menus: dark behind the centred text, lighter towards the edges so
         // the live demo run shows around them
         : const RadialGradient(radius: 0.85, colors: [Color.fromRGBO(11, 13, 23, 0.78), Color.fromRGBO(11, 13, 23, 0.5)]);
-    final layer = DecoratedBox(
+    return DecoratedBox(
       decoration: BoxDecoration(gradient: bg),
       child: SafeArea(
         child: Stack(
           children: [
             LayoutBuilder(
               builder: (context, c) => SingleChildScrollView(
-                padding: const EdgeInsets.all(Nf.s4),
+                padding: EdgeInsets.symmetric(horizontal: Nf.s4, vertical: pad),
                 child: ConstrainedBox(
-                  constraints: BoxConstraints(minHeight: math.max(0, c.maxHeight - Nf.s4 * 2)),
+                  constraints: BoxConstraints(minHeight: math.max(0, c.maxHeight - pad * 2)),
                   child: Center(
                     child: Column(
                       mainAxisSize: MainAxisSize.min,
@@ -376,13 +390,10 @@ class ScreenLayer extends StatelessWidget {
                 ),
               ),
             ),
-            ?corner,
+            ...corners,
           ],
         ),
       ),
     );
-    if (!overlay) return layer;
-    // overlays blur the running game behind them
-    return ClipRect(child: BackdropFilter(filter: ui.ImageFilter.blur(sigmaX: 3, sigmaY: 3), child: layer));
   }
 }
